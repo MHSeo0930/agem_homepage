@@ -159,12 +159,42 @@ export default function EditableContent({
     }
   }, [isEditing, quillKey, displayContent, defaultValue]);
 
+  // 블록 레벨 요소가 포함되어 있는지 확인
+  const hasBlockElements = /<(h[1-6]|p|div|ul|ol|li|blockquote|pre|table|tr|td|th|section|article|header|footer|nav|aside|main|figure|figcaption|address|fieldset|form|details|summary|dl|dt|dd)/i.test(displayContent || defaultValue);
+
   if (!isAuthenticated) {
-    return <span dangerouslySetInnerHTML={{ __html: displayContent }} className="inline-block" />;
+    // 블록 레벨 요소가 있으면 div, 없으면 span 사용
+    if (hasBlockElements) {
+      return <div dangerouslySetInnerHTML={{ __html: displayContent }} className="block w-full" />;
+    } else {
+      // span만 포함된 경우 인라인으로 표시
+      return <span dangerouslySetInnerHTML={{ __html: displayContent }} className="inline" />;
+    }
+  }
+
+  // 인라인 모드: 블록 레벨 요소가 없고 span만 포함된 경우
+  const isInlineMode = !hasBlockElements;
+
+  // 인라인 모드일 때는 span을 루트로 사용
+  if (isInlineMode && !isEditing) {
+    return (
+      <span className="relative inline group">
+        <span dangerouslySetInnerHTML={{ __html: displayContent }} />
+        <button
+          onClick={() => {
+            setQuillKey(prev => prev + 1);
+            setIsEditing(true);
+          }}
+          className="absolute -top-6 right-0 opacity-0 group-hover:opacity-100 bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-opacity whitespace-nowrap z-10"
+        >
+          Edit
+        </button>
+      </span>
+    );
   }
 
   return (
-    <span className="relative group inline-block w-full">
+    <div className={`relative group ${isInlineMode ? 'inline-block' : 'w-full'}`}>
       {isEditing ? (
         <div className="border-2 border-blue-500 rounded-lg p-3 bg-white w-full">
           <style jsx global>{`
@@ -232,19 +262,19 @@ export default function EditableContent({
           </div>
         </div>
       ) : (
-        <span className="relative inline-block">
-          <span dangerouslySetInnerHTML={{ __html: displayContent }} />
+        <div className={`relative ${hasBlockElements ? 'w-full' : 'inline'}`}>
+          <div dangerouslySetInnerHTML={{ __html: displayContent }} className={hasBlockElements ? '' : 'inline'} />
           <button
             onClick={() => {
               setQuillKey(prev => prev + 1);
               setIsEditing(true);
             }}
-            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-opacity"
+            className="absolute -top-6 right-0 opacity-0 group-hover:opacity-100 bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-opacity whitespace-nowrap z-10"
           >
             Edit
           </button>
-        </span>
+        </div>
       )}
-    </span>
+    </div>
   );
 }

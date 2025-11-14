@@ -125,7 +125,7 @@ export default function CurrentMembersPage() {
       note: "Co-supervised with S. M. Choi",
       email: "mail",
       tel: "--",
-      image: "/images/members/kiju-lee.jpg",
+      image: "/images/members/kiju-lee.png",
     },
     {
       id: "seoyun-choi",
@@ -251,11 +251,11 @@ export default function CurrentMembersPage() {
                 </button>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group"
+                  className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col"
                 >
                   {authenticated && (
                     <button
@@ -267,22 +267,24 @@ export default function CurrentMembersPage() {
                     </button>
                   )}
                   {/* 사진 편집 가능 */}
-                  <div className="relative mb-4">
-                    <EditableImage
-                      src={member.image}
-                      alt={member.name}
-                      contentKey={`member-${member.id}-image`}
-                      onSave={(url) => handleImageSave(member.id, url)}
-                      isAuthenticated={authenticated}
-                      className="aspect-square w-full rounded-lg object-cover bg-gray-200"
-                    />
+                  <div className="relative mb-5 flex justify-center">
+                    <div className="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 relative overflow-hidden rounded-lg bg-gray-200">
+                      <EditableImage
+                        src={member.image}
+                        alt={member.name}
+                        contentKey={`member-${member.id}-image`}
+                        onSave={(url) => handleImageSave(member.id, url)}
+                        isAuthenticated={authenticated}
+                        className="w-full h-full rounded-lg object-cover"
+                      />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 text-center w-full">
                     {/* 이름 편집 가능 */}
                     <EditableContent
                       contentKey={`member-${member.id}-name`}
-                      defaultValue={`<h3 class="text-xl font-semibold text-gray-900">${member.name}</h3>`}
+                      defaultValue={`<h3 class="text-xl font-semibold text-gray-900 text-center">${member.name}</h3>`}
                       onSave={async (content) => {
                         // HTML에서 텍스트 추출
                         const tempDiv = document.createElement("div");
@@ -296,7 +298,7 @@ export default function CurrentMembersPage() {
                     {/* 한글 이름 편집 가능 */}
                     <EditableContent
                       contentKey={`member-${member.id}-nameKo`}
-                      defaultValue={`<p class="text-sm text-gray-600">${member.nameKo}</p>`}
+                      defaultValue={`<p class="text-sm text-gray-600 text-center">${member.nameKo}</p>`}
                       onSave={async (content) => {
                         const tempDiv = document.createElement("div");
                         tempDiv.innerHTML = content;
@@ -307,7 +309,7 @@ export default function CurrentMembersPage() {
                     />
                     
                     {/* 직위 편집 가능 */}
-                    <div className="text-sm font-medium text-indigo-600">
+                    <div className="text-sm font-medium text-indigo-600 text-center flex flex-wrap items-center justify-center gap-1">
                       <EditableContent
                         contentKey={`member-${member.id}-position`}
                         defaultValue={`<span>${member.position}</span>`}
@@ -319,9 +321,35 @@ export default function CurrentMembersPage() {
                         }}
                         isAuthenticated={authenticated}
                       />
-                      <span className="text-gray-500 ml-1">({member.positionKo})</span>
+                      <span className="text-gray-500">(</span>
+                      <EditableContent
+                        contentKey={`member-${member.id}-positionKo`}
+                        defaultValue={`<span class="text-gray-500">${member.positionKo}</span>`}
+                        onSave={async (content) => {
+                          const tempDiv = document.createElement("div");
+                          tempDiv.innerHTML = content;
+                          const text = tempDiv.textContent || tempDiv.innerText || "";
+                          await handleSave(member.id, "positionKo", text);
+                        }}
+                        isAuthenticated={authenticated}
+                      />
+                      <span className="text-gray-500">)</span>
                       {member.affiliation && (
-                        <span className="text-gray-500 ml-1">({member.affiliation})</span>
+                        <>
+                          <span className="text-gray-500">(</span>
+                          <EditableContent
+                            contentKey={`member-${member.id}-affiliation`}
+                            defaultValue={`<span class="text-gray-500">${member.affiliation}</span>`}
+                            onSave={async (content) => {
+                              const tempDiv = document.createElement("div");
+                              tempDiv.innerHTML = content;
+                              const text = tempDiv.textContent || tempDiv.innerText || "";
+                              await handleSave(member.id, "affiliation", text);
+                            }}
+                            isAuthenticated={authenticated}
+                          />
+                          <span className="text-gray-500">)</span>
+                        </>
                       )}
                     </div>
                     
@@ -367,10 +395,10 @@ export default function CurrentMembersPage() {
                     />
                     
                     {/* 이메일 편집 가능 */}
-                    {authenticated ? (
+                    <div className="text-left">
                       <EditableContent
                         contentKey={`member-${member.id}-email`}
-                        defaultValue={`<a href="mailto:${member.email}" class="text-xs text-indigo-600 hover:text-indigo-700">${member.email}</a>`}
+                        defaultValue={member.email !== "mail" ? `<a href="mailto:${member.email}" class="text-xs text-indigo-600 hover:text-indigo-700 text-left">${member.email}</a>` : `<span class="text-xs text-indigo-600 text-left">${member.email}</span>`}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
@@ -379,16 +407,7 @@ export default function CurrentMembersPage() {
                         }}
                         isAuthenticated={authenticated}
                       />
-                    ) : (
-                      member.email !== "mail" && (
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="text-xs text-indigo-600 hover:text-indigo-700"
-                        >
-                          {member.email}
-                        </a>
-                      )
-                    )}
+                    </div>
                   </div>
                 </div>
               ))}

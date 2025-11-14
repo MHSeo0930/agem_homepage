@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<!-- <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />	
+	Tell the browser to be responsive to screen width
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"/> -->
+    <meta charset="utf-8">
+	<meta name="HandheldFriendly" content="True">
+	<meta name="MobileOptimized" content="320">
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+	<meta name="mobile-web-app-capable" content="yes">	
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="format-detection" content="telephone=no">
+	<meta name="Robots" content="ALL" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	
+	<!-- Bootstrap 3.3.5 -->
+<link rel="stylesheet" href="/x2/bootstrap/css/bootstrap-tagsinput.css" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/ms-icon-70x70.png"><!-- favicon -->
+    <!-- Select2 -->
+  	<link rel="stylesheet" href="/x2/plugins/select2/select2.min.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/x2/plugins/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="/x2/plugins/ionicons/2.0.1/css/ionicons.min.css" />
+    <!-- Theme style -->
+<!-- AdminLTE Skins. Choose a skin from the css/skins
+         folder instead of downloading all of them to reduce the load. -->
+    <link rel="stylesheet" href="/x2/dist/css/skins/_all-skins.min.css" />
+    <!-- iCheck -->
+    <link rel="stylesheet" href="/x2/plugins/iCheck/all.css" />
+    <!-- Morris chart -->
+    <link rel="stylesheet" href="/x2/plugins/morris/morris.css" />
+    <!-- jvectormap -->
+    <link rel="stylesheet" href="/x2/plugins/jvectormap/jquery-jvectormap-1.2.2.css" />
+    <!-- Date Picker -->
+    <link rel="stylesheet" href="/x2/plugins/datepicker/datepicker3.css" />
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="/x2/plugins/daterangepicker/daterangepicker-bs3.css" />
+    <!-- switchery -->
+    <link rel="stylesheet" href="/x2/plugins/switchery/switchery.min.css" />
+    <!-- ionslider -->
+    <link rel="stylesheet" href="/x2/plugins/ionslider/ion.rangeSlider.2.3.css" />
+    <link rel="stylesheet" href="/x2/plugins/ionslider/ion.rangeSlider.skinModern.css?v=2" />
+    <link rel="stylesheet" href="/x2/plugins/pace/pace.min.css" />
+    
+    <link rel="stylesheet" href="/css/cms/style.css" />
+    <link rel="stylesheet" href="/css/front/style.css?v=20251015" />
+    <link rel="stylesheet" href="/css/front/default.css" />
+    <link rel="stylesheet" href="/css/cms/animate.css" />
+    <link rel="stylesheet" href="/css/front/common.css" />
+    
+    <link rel="stylesheet" href="/css/front/slick.css" />
+    
+    <link rel="stylesheet" href="/css/front/sns.css" />
+    <!-- GridStack -->
+    <script>
+	var pageContext = "";
+	var sUserId = "";
+	var sUserName = "";
+	var sUserNo = "";
+	var sUserNum = "";
+	var sUserLevel = "";
+	
+	function searchPost() {
+		
+	    new daum.Postcode({
+	        oncomplete: function(data) {
+	            // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+	            // 각 주소의 노출 규칙에 따라 주소를 조합한다.
+	            // 내려오는 변수가 값이 없는 경우엔 공백('')값을 가지므로, 이를 참고하여 분기 한다.
+	            var fullAddr = ''; // 최종 주소 변수
+	            var extraAddr = ''; // 조합형 주소 변수
+
+	            // 사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+	            if (data.userSelectedType === 'R') { // 사용자가 도로명 주소를 선택했을 경우
+	                fullAddr = data.roadAddress;
+
+	            } else { // 사용자가 지번 주소를 선택했을 경우(J)
+	                fullAddr = data.jibunAddress;
+	            }
+
+	            // 사용자가 선택한 주소가 도로명 타입일때 조합한다.
+	            if(data.userSelectedType === 'R'){
+	                //법정동명이 있을 경우 추가한다.
+	                if(data.bname !== ''){
+	                    extraAddr += data.bname;
+	                }
+	                // 건물명이 있을 경우 추가한다.
+	                if(data.buildingName !== ''){
+	                    extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+	                }
+	                // 조합형주소의 유무에 따라 양쪽에 괄호를 추가하여 최종 주소를 만든다.
+	                fullAddr += (extraAddr !== '' ? ' ('+ extraAddr +')' : '');
+	            }
+				
+	            $(".zip").val(data.zonecode);
+	            $(".addr1").val(fullAddr);
+	            $(".addr2").focus();
+	        }
+	    }).open();
+	}
+	</script>
+    <!--[if lt IE 9]>
+        <script src="/x4/plugins/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="/x4/plugins/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <!-- jQuery 2.1.4 -->
+    <script src="/x4/plugins/jquery/jquery.min.js"></script>
+    <script src="/x2/plugins/validate/jquery.validate.js"></script>
+   	<script type="text/javascript" src="/js/front/jquery.easing.1.2.js"></script>
+	<script type="text/javascript" src="/js/front/placeholders.min.js"></script>
+	<script type="text/javascript" src="/js/front/slick.min.js"></script>
+	<script type="text/javascript" src="/js/front/common.js"></script>
+	<script type="text/javascript" src="/js/front/main.js"></script>
+	<script type="text/javascript" src="/js/front/mapType.js"></script>
+	<script type="text/javascript" src="/js/front/jquery.rwdImageMaps.min.js"></script>
+	<script type="text/javascript" src="/js/common/common.js"></script>
+	
+	<!-- pdf viewer -->
+	<script src="/x4/plugins/pdfjs/build/pdf.js"></script>
+	<script src="/x4/plugins/pdfobject/pdfobject.min.js"></script>
+    
+    <script src="/x4/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/x4/plugins/font-awesome/5.8.1/js/all.min.js"></script>
+    
+    <!-- datepicker -->
+    <script src="/x2/plugins/datepicker/bootstrap-datepicker.js"></script>
+    <script src="/x2/plugins/datepicker/locales/bootstrap-datepicker.kr.js"></script>
+    
+    <!-- daterangepicker -->
+    <script src="/x2/plugins/moment/2.10.2/moment.min.js"></script>  
+    <script src="/x2/plugins/moment/2.10.2/ko.js"></script>
+    <script src="/x2/plugins/daterangepicker/daterangepicker.js"></script>
+    
+    <!-- typing -->
+    <script src="/x4/plugins/rsa/jsbn.js"></script>
+	<script src="/x4/plugins/rsa/rsa.js"></script>
+	<script src="/x4/plugins/rsa/prng4.js"></script>
+	<script src="/x4/plugins/rsa/rng.js"></script>
+    <script src="/x4/plugins/jquery/jquery.cookie.js"></script>
+    
+    <!-- <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5b3e616199ce56b29925142e6f10bbbc&libraries=services"></script> --> <!-- 로컬 -->
+	<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e8d5dea3655e901b24c2a2a176521205&libraries=services"></script> <!-- 서버 -->
+ <script type="text/javascript" src="/x4/plugins/owlCarousel/owl.carousel.js"></script>
+	<link rel="stylesheet" href="/x4/plugins/owlCarousel/owl.carousel.min.css" />
+	<link rel="stylesheet" href="/x4/plugins/owlCarousel/owl.theme.green.min.css" />
+	
+	
+
+
+<script type="text/javascript" src="/js/front/board.js"></script>
+<script>
+$(function() {
+	
+});
+
+function linkPage(num){
+	
+	var form = document.frmSearch;
+	form.pageIndex.value = num;
+	form.submit();
+}
+</script>
+</head>	             
+<body>        
+<div id="wrap" class="wrapper">                                                                           
+	<head>
+<title>국립부경대학교 | 서민호 교수 연구실/ Min Ho Seo&apos;s group</title>
+<script>
+
+function incQckToggle(){
+	var windowWidth = $( window ).width();
+	if(windowWidth > 1670) {
+	//창 가로 크기가 500 미만일 경우
+	$('.incQck').css('display','block')
+	} else {
+	//창 가로 크기가 500보다 클 경우
+	$('.incQck').css('display','none')
+	}
+}
+$( window ).resize(function() {
+	   //창크기 변화 감지
+	   if('3470' > 1){
+	   	   incQckToggle()
+	   }
+	});
+$(function(){
+	
+	$('.logoutBtn').on('click', function(){
+		if(confirm('로그아웃 하시겠습니까?')){
+			location.href='/main/155';
+		}
+	});
+	
+	//getBookmarkList();
+	
+	$(".navbar-toggler").on("click", function(){
+		$('#sidebar').toggleClass('active');
+	});	
+	
+    var LogOutTimer = function() {
+        var S = {
+                      timer : null,
+                      limit : 1000 * 60 * 60, 
+                      fnc   : function() {},
+                      start : function() {
+                                S.timer = window.setTimeout(S.fnc, S.limit);
+                              },
+                      reset : function() {
+                                window.clearTimeout(S.timer);
+                                S.start();
+                              }
+                    };
+            
+    	document.onmousemove = function() { S.reset(); };
+            
+            return S;
+          }();
+          
+          // 로그아웃 체크시간 설정
+          LogOutTimer.limit = 1000 * 60 * 60;
+          
+          // 로그아웃 함수 설정
+          LogOutTimer.fnc = function() {
+            //alert("LogOut");
+            if('' != ''){
+            alert("장시간 사용하지 않아 로그아웃 되었습니다.");
+            location.href="/main";
+            }
+          }
+          
+          // 로그아웃 타이머 실행
+          LogOutTimer.start();
+	
+          
+          
+	// sns 모달 close할 시 body scroll overflow제거
+	$('#youtubeModal').on('hidden.bs.modal', function (event) {
+		$('body').css('overflow','');
+	})
+});
+
+
+function getCookie(name){
+	var cookieName = name + "=";
+	var i = 0;
+	while(i <= document.cookie.length){
+		var c = (i + cookieName.length);
+		if(document.cookie.substring(i, c) == cookieName){
+			if((lastCharCookie = document.cookie.indexOf(";", c)) == -1) lastCharCookie = document.cookie.length;
+			return encodeURI(document.cookie.substring(c, lastCharCookie));
+		}
+		
+		i = document.cookie.indexOf(" ", i) + 1
+		if(i == 0) break;			
+	}
+	return "";
+}
+
+function snsModal(url) {
+	// 매개변수 : youtube, insta, none
+	let someUrl = url
+	//모달
+	let modal = $('#youtubeModal');
+	//iframe src
+	let youtube_url = $('#youtube_url');
+	
+	//youtube 일때
+	if (someUrl.includes('youtube.com') == 1) {
+		let urlIndex = someUrl.indexOf('v=') + 2
+		//키값추출
+		youtube_url.attr('src',"https://www.youtube.com/embed/"+someUrl.slice(urlIndex)+"?enablejsapi=1&version=3&playerapiid=ytplayer");
+		//모달show
+		$('body').css('overflow','hidden');
+		modal.modal('show');
+	}else if (url === 'none') { //none 일때
+		return false;
+	}else { //instagram 및 타 URL
+		window.open(url)
+	} 
+}
+</script>
+</head> 
+<!-- /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
+<header>
+		<div id="a_gnb">
+		    <div id="a_gnbTop_8">
+		        <div id="a_gbtLft">
+		            <ul>
+		            	<li><a href="https://www.pknu.ac.kr/main">PKNU</a></li><li><a href="https://portal.pknu.ac.kr/">PKNU Portal</a></li>
+		                </ul>
+		        </div><!-- gbtLft -->
+		        <div id="a_gbtRht">     
+		        	<ul class="a_gbtMenu">
+		        	
+		            <li><a href="/agem/1">HOME</a></li>
+			                <li><a href="/agem/9999">SITEMAP</a></li>
+			            </ul>
+			           </div><!-- gbtRht -->
+		    </div><!-- gnbTop -->
+		    <div id="a_gnbBot">
+		        <h1 id="a_gnbLogo" class="a_gnbLogo_eng"><a href="/agem/1">
+		        	<span> PKNU</span>
+		        		서민호 교수 연구실/ Min Ho Seo&apos;s group</a>
+		        </h1>
+		        <div id="a_gnbMenu">
+		            <ul class="gbm">
+		                <li >
+			                    <h4 class="gnbDpt1"><a href="/agem/3457" target="_self" title="Members">Members</a>
+			                    	<span></span>
+			                    	</h4>
+			                    <ul>
+			                    	<li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3459" target="_self" title="Professor">Professor</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        <li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3460" target="_self" title="Current Members">Current Members</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        <li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3461" target="_self" title="Alumni">Alumni</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        </ul>
+			                </li>
+		               	<li >
+			                    <h4 class="gnbDpt1"><a href="/agem/3458" target="_self" title="Research">Research</a>
+			                    	<span></span>
+			                    	</h4>
+			                    <ul>
+			                    	<li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3462" target="_self" title="Green Energy Materials">Green Energy Materials</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        <li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3463" target="_self" title="AI &amp; Computational Chemistry">AI &amp; Computational Chemistry</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        </ul>
+			                </li>
+		               	<li >
+			                    <h4 class="gnbDpt1"><a href="/agem/3464" target="_self" title="Achievements">Achievements</a>
+			                    	<span></span>
+			                    	</h4>
+			                    <ul>
+			                    	<li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3471" target="_self" title="Journals">Journals</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        <li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3467" target="_self" title="Conference">Conference</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        </ul>
+			                </li>
+		               	<li >
+			                    <h4 class="gnbDpt1"><a href="/agem/3468" target="_self" title="Board">Board</a>
+			                    	<span></span>
+			                    	</h4>
+			                    <ul>
+			                    	<li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3469" target="_self" title="News">News</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        <li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3470" target="_self" title="Gallery">Gallery</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        </ul>
+			                </li>
+		               	<li >
+			                    <h4 class="gnbDpt1"><a href="/agem/3485" target="_self" title="About Lab.">About Lab.</a>
+			                    	<span></span>
+			                    	</h4>
+			                    <ul>
+			                    	<li>
+			                        		<h5 class="gnbDpt2">
+			                        			<a href="/agem/3486" target="_self" title="Map">Map</a>
+			                        			</h5>
+			                        		<ul class="gnbDpt2_ul gnbDpt2_ul_location">
+						                    	</ul>
+			                        	</li>
+			                        </ul>
+			                </li>
+		               	</ul><!-- gbm -->
+		            <div id="a_gmTop"></div>
+		        </div><!-- gnbMenu -->
+		        
+		
+		        <button id="a_gnbBtn" class="a_gnbBtn">
+		            <span>Open total menu</span>
+		            <em></em>
+		            <em></em>
+		            <em></em>
+		        </button><!-- gnbBtn -->
+		        <button id="a_gnbMo">
+		            <span>Open total menu</span>
+		            <em></em>
+		            <em></em>
+		            <em></em>
+		        </button>
+		        <!-- gnbAll -->
+		        <div id="a_gnbAll"><div class="container"></div></div>
+		    </div><!-- gnbBot -->
+		</div>
+	</header>
+<div id="container" class="">		
+		
+<script>
+
+var currentZoom = 100;
+// 줌아웃
+function zoomOut(){
+	currentZoom = currentZoom - 10;
+	zoomDisplay();
+}
+//줌인
+function zoomIn(){
+	currentZoom = currentZoom + 10;
+	zoomDisplay();
+}
+// 줌화면 표시
+function zoomDisplay(){
+	if(currentZoom <= 50){
+		if('ENG' == 'KOR'){
+			alert("더 이상 축소할 수 없습니다.");
+			document.body.style.zoom = '60%';
+			currentZoom = 60;
+		}else{
+			alert("Can't zoom out any more.");
+			document.body.style.zoom = '60%';
+			currentZoom = 60;
+		}
+	}
+	if(currentZoom >= 150){
+		if('ENG' == 'KOR'){
+			alert("더 이상 확대할 수 없습니다.");
+			document.body.style.zoom = '140%';
+			currentZoom = 140;
+		}else{
+			alert("Can't zoom in any more.");
+			document.body.style.zoom = '140%';
+			currentZoom = 140;
+		}
+	}
+	if(currentZoom > 50 && currentZoom < 150){
+		document.body.style.zoom = currentZoom + '%';
+	}
+}
+
+</script>
+<!-- /////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+<div id="a_subTop" class="bg06" >
+		<div>
+			<div>
+				<div class="container">
+					<h2></h2>
+						<ul class="a_sbtSet">
+						<li><a href="javascript:zoomIn()" class="eng_sbtZom">Zoom in</a></li>
+						<li><a href="javascript:zoomOut()" class="eng_sbtOut">Zoom out</a></li>
+						<li><a href="javascript:window.print() return false;" class="sbtPrt" onclick="window.print()">Print</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>		
+	</div><!-- subTop -->
+	<div id="sub">
+		<div class="container">
+
+			<div id="sbWrap">
+				<div id="a_sbLft">
+				    <dl class="a_sbtNav">
+						<dt>Home</dt>
+						<dd>Board</dd>
+						<dd>Gallery</dd>
+						</dl>
+					<h3>Board</h3>
+					<ul>
+						<li>
+									<ul class="gnbDpt2">
+										<li>
+											<a  href="/agem/3469" title="News" target="_self">News</a>
+											<span style="display: block; position: absolute; left: 15%;right: 0;top: 0;bottom: 0; width: 100px;"></span>
+										</li>
+										<li>
+											<ul class="gnbDpt2_ul_m">
+									           	</ul>
+										</li>
+									</ul>
+								</li>
+								
+							<li>
+									<ul class="gnbDpt2">
+										<li>
+											<a class="dep2_on" href="/agem/3470" title="Gallery" target="_self">Gallery</a>
+											<span style="display: block; position: absolute; left: 15%;right: 0;top: 0;bottom: 0; width: 100px;"></span>
+										</li>
+										<li>
+											<ul class="gnbDpt2_ul_m">
+									           	</ul>
+										</li>
+									</ul>
+								</li>
+								
+							</ul>
+				</div>
+<!-- ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
+<div id="sub">
+		<div class="container">
+
+			<div id="sbWrap">
+			    <div id="sbCont">
+			
+			        <h3 id="subTitle">Gallery</h3>
+			
+			        <form name="frmSearch" action="/agem/3470" method="get">
+						<input type="hidden" name="pageIndex" value="1"/>
+					    <input type="hidden" name="bbsId" value="2401508"/>		
+			            <dl class="a_brdSch">
+			               <dt>
+								<select name="searchCondition" id="searchCondition">
+									<option value="title" >title</option>
+									<option value="cont" >contents</option>
+								</select>
+							</dt>
+							<dd>
+								<input type="text" name="searchKeyword" id="searchKeyword" placeholder="input keyword" title="input keyword" value="" maxlength="50"/>
+								<a href="#none" id="btnSearch" onclick="frmSearch.submit()">submit</a>
+							</dd>
+			            </dl><!-- brdSch -->
+			        </form>
+			
+			        <div class="c_bdCont">
+			        	<div class="a_brdTop">
+			                <p>total <span>1</span>/3</p>			
+			            </div>
+			            <ul class="c_glyList">
+							<li>
+									<a href="?action=view&no=9978149" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000172/생신축하드립니다호호.jpg')no-repeat center center;"></em>
+											<p>250930 happy birthday </p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9975816" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000144/0854ba_ce7d9687279d48b39644d78ad91d5fea~mv2_1.jpg')no-repeat center center;"></em>
+											<p>250824-25 Workshop with KIMS</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9975362" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000139/KakaoTalk_20250822_230404447_12_1.jpg')no-repeat center center;"></em>
+											<p>250822 Graudation</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9975361" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000139/IMG_3066.jpg')no-repeat center center;"></em>
+											<p>250709 Sajik Baseball Stadium</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9970337" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000077/KakaoTalk_20250526_191031628.jpg')no-repeat center center;"></em>
+											<p>247th ECS Meeting (Montreal, Canada)</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9970336" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000077/KakaoTalk_20250526_191149479_2.jpg')no-repeat center center;"></em>
+											<p>25 춘계한국전기화학회 (제주도)</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9965324" >
+									
+										<em style="background:url('https://icms.pknu.ac.kr/editor/namo/binary/images/000017/KakaoTalk_20250226_131224183_1.jpg')no-repeat center center;"></em>
+											<p>2025 대한화학회 동계 심포지엄 (강원도 홍천 소노캄)</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9959943" >
+									
+										<em style="background:url('/upload/photo/2024/11/11/b84cdd12-db16-4314-8c7d-f15e13a7b8db.JPG')no-repeat center center;"></em>
+											<p>241108 Happy birthday</p>
+									</a>
+								</li>
+							<li>
+									<a href="?action=view&no=9959942" >
+									
+										<em style="background:url('/upload/photo/2024/11/11/f63fd169-713f-415d-a68b-315d596db0b1.JPG')no-repeat center center;"></em>
+											<p>24 추계표면공학회</p>
+									</a>
+								</li>
+							</ul>
+			
+			            <div class="a_paging">
+						<ul><li class="paginate a_on active"><a href="#none" class="a_on">1</a></li>&#160;<li class="paginate"><a href="#none" onclick="linkPage(2); return false;">2</a></li>&#160;<li class="paginate"><a href="#none" onclick="linkPage(3); return false;">3</a></li>&#160;
+</ul>
+						</div>
+			        </div><!-- bdCont -->
+			    </div>
+			</div>
+		</div><!-- container -->
+	</div><!-- sub -->
+</div><!-- sbWrap -->
+</div><!-- container -->
+</div><!-- sub -->
+</div>
+	<!-- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// -->
+
+
+
+<footer>
+		<div id="botSite_eng">
+			<!-- topBtn -->
+			<div class="topBtn">
+				<a href="#">TOP</a>
+			</div>
+			<!-- topBtn -->
+			<button class="btsBtn_eng"></button>
+			<div class="btsCont">
+				<div class="container">
+					</div>
+			</div>
+		</div>
+	
+		<div id="c_footer">
+			<div class="container">
+				<!-- <ul class="c_ftTop">
+					<li><a href="/main/168" class="sky">개인정보처리방침</a></li>
+					<li><a href="/main/172">이메일무단수집금지</a></li>
+					<li><a href="/main/174">대학행정서비스 헌장</a></li>
+					<li><a href="/main/183">정보공개방</a></li>
+					<li><a href="/main/179">정책실명제</a></li>
+					<li><a href="/main/54">NEWS Letter 신청</a></li>
+					<li><a href="/main/176">대학알리미</a></li>
+					<li><a href="/main/167">행정예고</a></li>
+					<li><a href="/main/185">청렴센터</a></li>
+				</ul> -->
+				<div class="c_ftBot">
+					<a class="text-red" href="https://www.pknu.ac.kr/main/168" target="_blank" title="Privacy Policy">Privacy Policy</a>
+					<pre style="color: #4a4a4a; font-size: 12pt; font-family: 'Noto Sans KR', sans-serif; white-space: pre-wrap;">대연캠퍼스(48513) 부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관
+Pukyong National University, 45 Yongso-ro, Nam-gu, Busan 48547, Republic of Korea</pre>
+					<p class="ftCpy">COPYRIGHT(C) 2021 PUKYONG NATIONAL UNIVERSITY. ALL RIGHTS RESERVED.</p>
+					
+					
+				</div>
+			</div>
+		</div><!-- footer -->
+		
+	</footer>
+</div>	
+</body>
+</html>

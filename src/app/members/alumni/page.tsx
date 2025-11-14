@@ -18,7 +18,7 @@ export default function AlumniPage() {
       currentPositionKo: "LG에너지솔루션",
       email: "mail",
       tel: "--",
-      image: "/images/alumni/jee-min-hwang.jpg",
+      image: "/images/alumni/jee-min-hwang.png",
     },
     {
       id: "jong-min-lee",
@@ -42,7 +42,7 @@ export default function AlumniPage() {
       currentPositionKo: "LT Metal",
       email: "mail",
       tel: "--",
-      image: "/images/alumni/mun-seon-kang.jpg",
+      image: "/images/alumni/mun-seon-kang.png",
     },
     {
       id: "sung-young-yang",
@@ -54,7 +54,7 @@ export default function AlumniPage() {
       currentPositionKo: "두산퓨얼셀",
       email: "mail",
       tel: "--",
-      image: "/images/alumni/sung-young-yang.jpg",
+      image: "/images/alumni/sung-young-yang.png",
     },
     {
       id: "song-jin",
@@ -177,11 +177,11 @@ export default function AlumniPage() {
                 </button>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {alumni.map((alumnus) => (
                 <div
                   key={alumnus.id}
-                  className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group"
+                  className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col"
                 >
                   {authenticated && (
                     <button
@@ -193,22 +193,24 @@ export default function AlumniPage() {
                     </button>
                   )}
                   {/* 사진 편집 가능 */}
-                  <div className="relative mb-4">
-                    <EditableImage
-                      src={alumnus.image}
-                      alt={alumnus.name}
-                      contentKey={`alumnus-${alumnus.id}-image`}
-                      onSave={(url) => handleImageSave(alumnus.id, url)}
-                      isAuthenticated={authenticated}
-                      className="aspect-square w-full rounded-lg object-cover bg-gray-200"
-                    />
+                  <div className="relative mb-5 flex justify-center">
+                    <div className="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 relative overflow-hidden rounded-lg bg-gray-200">
+                      <EditableImage
+                        src={alumnus.image}
+                        alt={alumnus.name}
+                        contentKey={`alumnus-${alumnus.id}-image`}
+                        onSave={(url) => handleImageSave(alumnus.id, url)}
+                        isAuthenticated={authenticated}
+                        className="w-full h-full rounded-lg object-cover"
+                      />
+                    </div>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 text-center w-full">
                     {/* 이름 편집 가능 */}
                     <EditableContent
                       contentKey={`alumnus-${alumnus.id}-name`}
-                      defaultValue={`<h3 class="text-xl font-semibold text-gray-900">${alumnus.name}</h3>`}
+                      defaultValue={`<h3 class="text-xl font-semibold text-gray-900 text-center">${alumnus.name}</h3>`}
                       onSave={async (content) => {
                         const tempDiv = document.createElement("div");
                         tempDiv.innerHTML = content;
@@ -221,7 +223,7 @@ export default function AlumniPage() {
                     {/* 한글 이름 편집 가능 */}
                     <EditableContent
                       contentKey={`alumnus-${alumnus.id}-nameKo`}
-                      defaultValue={`<p class="text-sm text-gray-600">${alumnus.nameKo}</p>`}
+                      defaultValue={`<p class="text-sm text-gray-600 text-center">${alumnus.nameKo}</p>`}
                       onSave={async (content) => {
                         const tempDiv = document.createElement("div");
                         tempDiv.innerHTML = content;
@@ -232,7 +234,7 @@ export default function AlumniPage() {
                     />
                     
                     {/* 직위 편집 가능 */}
-                    <p className="text-sm font-medium text-indigo-600">
+                    <p className="text-sm font-medium text-indigo-600 text-center">
                       <EditableContent
                         contentKey={`alumnus-${alumnus.id}-position`}
                         defaultValue={`<span>${alumnus.position}</span>`}
@@ -244,15 +246,27 @@ export default function AlumniPage() {
                         }}
                         isAuthenticated={authenticated}
                       />
-                      <span className="text-gray-500 ml-1">({alumnus.positionKo})</span>
+                      <span className="text-gray-500 ml-1">(</span>
+                      <EditableContent
+                        contentKey={`alumnus-${alumnus.id}-positionKo`}
+                        defaultValue={`<span class="text-gray-500">${alumnus.positionKo}</span>`}
+                        onSave={async (content) => {
+                          const tempDiv = document.createElement("div");
+                          tempDiv.innerHTML = content;
+                          const text = tempDiv.textContent || tempDiv.innerText || "";
+                          await handleSave(alumnus.id, "positionKo", text);
+                        }}
+                        isAuthenticated={authenticated}
+                      />
+                      <span className="text-gray-500">)</span>
                     </p>
                     
                     {/* 현재 근무처 편집 가능 */}
-                    <div className="pt-2 border-t border-gray-100">
-                      <p className="text-xs text-gray-500 mb-1">Position / 근무처</p>
+                    <div className="pt-2 border-t border-gray-100 mt-2">
+                      <p className="text-xs text-gray-500 mb-1 text-left">Position / 근무처</p>
                       <EditableContent
                         contentKey={`alumnus-${alumnus.id}-currentPosition`}
-                        defaultValue={`<p class="text-sm text-gray-700">${alumnus.currentPosition}</p>`}
+                        defaultValue={`<p class="text-sm text-gray-700 text-left break-words">${alumnus.currentPosition}</p>`}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
@@ -261,24 +275,13 @@ export default function AlumniPage() {
                         }}
                         isAuthenticated={authenticated}
                       />
-                      <EditableContent
-                        contentKey={`alumnus-${alumnus.id}-currentPositionKo`}
-                        defaultValue={`<p class="text-xs text-gray-600">${alumnus.currentPositionKo}</p>`}
-                        onSave={async (content) => {
-                          const tempDiv = document.createElement("div");
-                          tempDiv.innerHTML = content;
-                          const text = tempDiv.textContent || tempDiv.innerText || "";
-                          await handleSave(alumnus.id, "currentPositionKo", text);
-                        }}
-                        isAuthenticated={authenticated}
-                      />
                     </div>
                     
                     {/* 이메일 편집 가능 */}
-                    {authenticated ? (
+                    <div className="text-left">
                       <EditableContent
                         contentKey={`alumnus-${alumnus.id}-email`}
-                        defaultValue={`<a href="mailto:${alumnus.email}" class="text-xs text-indigo-600 hover:text-indigo-700">${alumnus.email}</a>`}
+                        defaultValue={alumnus.email !== "mail" ? `<a href="mailto:${alumnus.email}" class="text-xs text-indigo-600 hover:text-indigo-700 text-left">${alumnus.email}</a>` : `<span class="text-xs text-indigo-600 text-left">${alumnus.email}</span>`}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
@@ -287,16 +290,7 @@ export default function AlumniPage() {
                         }}
                         isAuthenticated={authenticated}
                       />
-                    ) : (
-                      alumnus.email !== "mail" && (
-                        <a
-                          href={`mailto:${alumnus.email}`}
-                          className="text-xs text-indigo-600 hover:text-indigo-700"
-                        >
-                          {alumnus.email}
-                        </a>
-                      )
-                    )}
+                    </div>
                   </div>
                 </div>
               ))}

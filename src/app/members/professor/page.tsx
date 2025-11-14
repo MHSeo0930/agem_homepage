@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export const metadata = {
   title: "Professor | Min Ho Seo",
   description: "Associate Professor Min Ho Seo - Department of Nanoconvergence Engineering, Pukyong National University. AI & Green Energy Material Lab.",
@@ -24,8 +26,14 @@ export default function ProfessorPage() {
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               <div className="md:col-span-1">
-                <div className="aspect-square bg-gray-200 rounded-xl mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-6xl">👤</span>
+                <div className="aspect-square bg-gray-200 rounded-xl mb-4 overflow-hidden relative">
+                  <Image
+                    src="/images/members/professor.jpg"
+                    alt="Prof. Min Ho Seo"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
                 </div>
               </div>
               <div className="md:col-span-2">

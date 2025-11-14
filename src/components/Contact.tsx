@@ -1,71 +1,266 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import EditableContent from "./EditableContent";
+import { useAuth } from "@/hooks/useAuth";
+
 export default function Contact() {
+  const { authenticated } = useAuth();
+  const [contactData, setContactData] = useState({
+    title: "Contact",
+    titleKo: "연락처",
+    officeTitle: "Office Information",
+    officeTitleKo: "사무실 정보",
+    department: "Nanoconvergence Engineering",
+    departmentKo: "나노융합공학과",
+    institution: "Pukyong National University (PKNU)",
+    institutionKo: "부경대학교",
+    office: "공학1관(E13) 1308호",
+    officeKo: "Engineering Building 1 (E13), Room 1308",
+    email: "foifrit@pknu.ac.kr",
+    phone: "051-629-6393",
+    address: "45 Yongso-ro, Nam-gu, Busan 48547",
+    addressKo: "부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호",
+    researchLinksTitle: "Research Links",
+    researchLinksTitleKo: "연구 링크",
+    locationTitle: "Location",
+    locationTitleKo: "위치",
+    locationAddress: "45 Yongso-ro, Nam-gu, Busan 48547, Republic of Korea",
+    locationAddressKo: "부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호",
+    locationDetail: "Pukyong National University, Busan Campus\nEngineering Building 1 (E13), Room 1308",
+    orcidLink: "https://orcid.org/0000-0003-3910-4512",
+    googleScholarLink: "https://scholar.google.com/citations?user=XXXXXXX",
+    researchGateLink: "https://www.researchgate.net/profile/Min-Ho-Seo-2?ev=hdr_xprf",
+  });
+
+  useEffect(() => {
+    fetch("/api/content")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.contact) {
+          try {
+            const parsed = JSON.parse(data.contact);
+            setContactData(parsed);
+          } catch (e) {
+            console.error("Failed to parse contact data");
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (field: string, value: string) => {
+    const updatedData = { ...contactData, [field]: value };
+    setContactData(updatedData);
+    
+    const response = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contact: JSON.stringify(updatedData) }),
+    });
+    if (!response.ok) throw new Error("Failed to save");
+  };
+
   return (
     <section id="contact" className="py-16 bg-gray-50 border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            Contact
-            <span className="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">
-              연락처
-            </span>
-          </h2>
+          <EditableContent
+            contentKey="contact-title"
+            defaultValue={`<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${contactData?.title || "Contact"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${contactData?.titleKo || "연락처"}</span></h2>`}
+            onSave={async (content) => {
+              const tempDiv = document.createElement("div");
+              tempDiv.innerHTML = content;
+              const titleElement = tempDiv.querySelector("h2");
+              const titleKoElement = tempDiv.querySelector("span");
+              if (titleElement) {
+                const titleText = titleElement.childNodes[0]?.textContent || "";
+                const titleKoText = titleKoElement?.textContent || "";
+                await handleSave("title", titleText);
+                await handleSave("titleKo", titleKoText);
+              }
+            }}
+            isAuthenticated={authenticated}
+          />
         </div>
         
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Office Information
-                <span className="block text-sm text-gray-600 font-normal mt-1">
-                  사무실 정보
-                </span>
-              </h3>
+              <EditableContent
+                contentKey="contact-office-title"
+                defaultValue={`<h3 class="text-lg font-semibold text-gray-900 mb-4">${contactData?.officeTitle || "Office Information"}<span class="block text-sm text-gray-600 font-normal mt-1">${contactData?.officeTitleKo || "사무실 정보"}</span></h3>`}
+                onSave={async (content) => {
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = content;
+                  const titleElement = tempDiv.querySelector("h3");
+                  const titleKoElement = tempDiv.querySelector("span");
+                  if (titleElement) {
+                    const titleText = titleElement.childNodes[0]?.textContent || "";
+                    const titleKoText = titleKoElement?.textContent || "";
+                    await handleSave("officeTitle", titleText);
+                    await handleSave("officeTitleKo", titleKoText);
+                  }
+                }}
+                isAuthenticated={authenticated}
+              />
               <div className="space-y-2 text-sm text-gray-700">
                 <p>
-                  <span className="font-medium">Department:</span> Nanoconvergence Engineering
+                  <span className="font-medium">Department:</span>{" "}
+                  <EditableContent
+                    contentKey="contact-department"
+                    defaultValue={`<span>${contactData?.department || "Nanoconvergence Engineering"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("department", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                   <br />
-                  <span className="text-xs text-gray-600">나노융합공학과</span>
+                  <EditableContent
+                    contentKey="contact-department-ko"
+                    defaultValue={`<span class="text-xs text-gray-600">${contactData?.departmentKo || "나노융합공학과"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("departmentKo", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
                 <p>
-                  <span className="font-medium">Institution:</span> Pukyong National University (PKNU)
+                  <span className="font-medium">Institution:</span>{" "}
+                  <EditableContent
+                    contentKey="contact-institution"
+                    defaultValue={`<span>${contactData?.institution || "Pukyong National University (PKNU)"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("institution", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                   <br />
-                  <span className="text-xs text-gray-600">부경대학교</span>
+                  <EditableContent
+                    contentKey="contact-institution-ko"
+                    defaultValue={`<span class="text-xs text-gray-600">${contactData?.institutionKo || "부경대학교"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("institutionKo", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
                 <p>
-                  <span className="font-medium">Office:</span> 공학1관(E13) 1308호
+                  <span className="font-medium">Office:</span>{" "}
+                  <EditableContent
+                    contentKey="contact-office"
+                    defaultValue={`<span>${contactData?.office || "공학1관(E13) 1308호"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("office", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                   <br />
-                  <span className="text-xs text-gray-600">Engineering Building 1 (E13), Room 1308</span>
+                  <EditableContent
+                    contentKey="contact-office-ko"
+                    defaultValue={`<span class="text-xs text-gray-600">${contactData?.officeKo || "Engineering Building 1 (E13), Room 1308"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("officeKo", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
                 <p>
                   <span className="font-medium">Email:</span>{" "}
-                  <a 
-                    href="mailto:foifrit@pknu.ac.kr" 
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    foifrit@pknu.ac.kr
-                  </a>
+                  <EditableContent
+                    contentKey="contact-email"
+                    defaultValue={`<a href="mailto:${contactData?.email || "foifrit@pknu.ac.kr"}" class="text-blue-600 hover:text-blue-700">${contactData?.email || "foifrit@pknu.ac.kr"}</a>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("email", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
                 <p>
-                  <span className="font-medium">Phone:</span> 051-629-6393
+                  <span className="font-medium">Phone:</span>{" "}
+                  <EditableContent
+                    contentKey="contact-phone"
+                    defaultValue={`<span>${contactData?.phone || "051-629-6393"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("phone", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
                 <p>
-                  <span className="font-medium">Address:</span> 45 Yongso-ro, Nam-gu, Busan 48547
+                  <span className="font-medium">Address:</span>{" "}
+                  <EditableContent
+                    contentKey="contact-address"
+                    defaultValue={`<span>${contactData?.address || "45 Yongso-ro, Nam-gu, Busan 48547"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("address", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                   <br />
-                  <span className="text-xs text-gray-600">부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호</span>
+                  <EditableContent
+                    contentKey="contact-address-ko"
+                    defaultValue={`<span class="text-xs text-gray-600">${contactData?.addressKo || "부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호"}</span>`}
+                    onSave={async (content) => {
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = content;
+                      const text = tempDiv.textContent || tempDiv.innerText || "";
+                      await handleSave("addressKo", text);
+                    }}
+                    isAuthenticated={authenticated}
+                  />
                 </p>
               </div>
             </div>
 
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Research Links
-                <span className="block text-sm text-gray-600 font-normal mt-1">
-                  연구 링크
-                </span>
-              </h3>
+              <EditableContent
+                contentKey="contact-research-links-title"
+                defaultValue={`<h3 class="text-lg font-semibold text-gray-900 mb-4">${contactData?.researchLinksTitle || "Research Links"}<span class="block text-sm text-gray-600 font-normal mt-1">${contactData?.researchLinksTitleKo || "연구 링크"}</span></h3>`}
+                onSave={async (content) => {
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = content;
+                  const titleElement = tempDiv.querySelector("h3");
+                  const titleKoElement = tempDiv.querySelector("span");
+                  if (titleElement) {
+                    const titleText = titleElement.childNodes[0]?.textContent || "";
+                    const titleKoText = titleKoElement?.textContent || "";
+                    await handleSave("researchLinksTitle", titleText);
+                    await handleSave("researchLinksTitleKo", titleKoText);
+                  }
+                }}
+                isAuthenticated={authenticated}
+              />
               <div className="space-y-2">
                 <a
-                  href="https://orcid.org/0000-0003-3910-4512"
+                  href={contactData?.orcidLink || "https://orcid.org/0000-0003-3910-4512"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -73,7 +268,7 @@ export default function Contact() {
                   ORCID Profile →
                 </a>
                 <a
-                  href="https://scholar.google.com/citations?user=XXXXXXX"
+                  href={contactData?.googleScholarLink || "https://scholar.google.com/citations?user=XXXXXXX"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -81,7 +276,7 @@ export default function Contact() {
                   Google Scholar →
                 </a>
                 <a
-                  href="https://www.researchgate.net/profile/Min-Ho-Seo-2?ev=hdr_xprf"
+                  href={contactData?.researchGateLink || "https://www.researchgate.net/profile/Min-Ho-Seo-2?ev=hdr_xprf"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -93,27 +288,70 @@ export default function Contact() {
           </div>
 
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Location
-              <span className="block text-sm text-gray-600 font-normal mt-1">
-                위치
-              </span>
-            </h3>
-            <div className="aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center border border-gray-200">
-              <div className="text-center p-4">
-                <div className="text-4xl mb-2">📍</div>
-                <p className="text-sm text-gray-600 font-medium">
-                  45 Yongso-ro, Nam-gu, Busan 48547, Republic of Korea
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Pukyong National University, Busan Campus
-                  <br />
-                  Engineering Building 1 (E13), Room 1308
-                </p>
-              </div>
+            <EditableContent
+              contentKey="contact-location-title"
+              defaultValue={`<h3 class="text-lg font-semibold text-gray-900 mb-4">${contactData?.locationTitle || "Location"}<span class="block text-sm text-gray-600 font-normal mt-1">${contactData?.locationTitleKo || "위치"}</span></h3>`}
+              onSave={async (content) => {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = content;
+                const titleElement = tempDiv.querySelector("h3");
+                const titleKoElement = tempDiv.querySelector("span");
+                if (titleElement) {
+                  const titleText = titleElement.childNodes[0]?.textContent || "";
+                  const titleKoText = titleKoElement?.textContent || "";
+                  await handleSave("locationTitle", titleText);
+                  await handleSave("locationTitleKo", titleKoText);
+                }
+              }}
+              isAuthenticated={authenticated}
+            />
+            <div className="aspect-video rounded-lg mb-4 overflow-hidden border border-gray-200">
+              <iframe
+                src="https://www.google.com/maps?q=부산광역시+남구+용소로+45&output=embed&hl=ko"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full h-full"
+                title="부산광역시 남구 용소로 45"
+              ></iframe>
+            </div>
+            <div className="text-center">
+              <EditableContent
+                contentKey="contact-location-address"
+                defaultValue={`<p class="text-sm text-gray-600 font-medium">${contactData?.locationAddress || "45 Yongso-ro, Nam-gu, Busan 48547, Republic of Korea"}</p>`}
+                onSave={async (content) => {
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = content;
+                  const text = tempDiv.textContent || tempDiv.innerText || "";
+                  await handleSave("locationAddress", text);
+                }}
+                isAuthenticated={authenticated}
+              />
+              <EditableContent
+                contentKey="contact-location-address-ko"
+                defaultValue={`<p class="text-xs text-gray-500 mt-1">${contactData?.locationAddressKo || "부산광역시 남구 용소로 45 (대연캠퍼스) 공학 1관(E13) 1308호"}</p>`}
+                onSave={async (content) => {
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = content;
+                  const text = tempDiv.textContent || tempDiv.innerText || "";
+                  await handleSave("locationAddressKo", text);
+                }}
+                isAuthenticated={authenticated}
+              />
+              <EditableContent
+                contentKey="contact-location-detail"
+                defaultValue={`<p class="text-xs text-gray-500 mt-2">${(contactData?.locationDetail || "Pukyong National University, Busan Campus\nEngineering Building 1 (E13), Room 1308").replace(/\n/g, '<br />')}</p>`}
+                onSave={async (content) => {
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = content;
+                  const text = tempDiv.textContent || tempDiv.innerText || "";
+                  await handleSave("locationDetail", text);
+                }}
+                isAuthenticated={authenticated}
+              />
             </div>
           </div>
         </div>
@@ -121,4 +359,3 @@ export default function Contact() {
     </section>
   );
 }
-

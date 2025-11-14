@@ -25,9 +25,13 @@ export default function EditableImage({
   const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 이미지가 로드되었는지 확인
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   useEffect(() => {
     setImageSrc(src);
     setImageError(false);
+    setImageLoaded(false);
   }, [src]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,23 +65,38 @@ export default function EditableImage({
     setImageError(true);
   };
 
-  const showPlaceholder = !imageSrc || imageSrc === "" || imageError || (imageSrc.includes("/images/members/") && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  // 갤러리 이미지인지 확인 (gallery 경로 포함 시)
+  const isGalleryImage = imageSrc && imageSrc.includes("/images/gallery/");
+  const isMemberImage = imageSrc && (imageSrc.includes("/images/members/") || imageSrc.includes("/images/alumni/"));
+  const isPngImage = imageSrc && imageSrc.toLowerCase().endsWith('.png');
+  const showPlaceholder = !imageSrc || imageSrc === "" || imageError || (isMemberImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i)) || (isGalleryImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
   if (!isAuthenticated) {
     return (
       <div className={className}>
         {showPlaceholder ? (
           <div className={`${className} bg-gray-200 flex items-center justify-center rounded-lg`}>
-            <span className="text-gray-400 text-4xl">👤</span>
+            <span className="text-gray-400 text-4xl">{isGalleryImage ? "📸" : "👤"}</span>
           </div>
+        ) : isPngImage && isMemberImage ? (
+          <img
+            src={imageSrc}
+            alt={alt}
+            className={className}
+            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+          />
         ) : (
           <Image
             src={imageSrc}
             alt={alt}
-            width={500}
-            height={500}
+            width={isMemberImage ? 200 : 500}
+            height={isMemberImage ? 200 : 500}
             className={className}
             onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+            unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+            priority={imageSrc.includes("/images/alumni/")}
           />
         )}
       </div>
@@ -88,17 +107,28 @@ export default function EditableImage({
     <div className="relative group">
       {showPlaceholder ? (
         <div className={`${className} bg-gray-200 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 transition-colors`}>
-          <span className="text-gray-400 text-4xl mb-2">👤</span>
-          <span className="text-xs text-gray-500">사진 없음</span>
+          <span className="text-gray-400 text-4xl mb-2">{isGalleryImage ? "📸" : "👤"}</span>
+          <span className="text-xs text-gray-500">{isGalleryImage ? "이미지 없음" : "사진 없음"}</span>
         </div>
+      ) : isPngImage && isMemberImage ? (
+        <img
+          src={imageSrc}
+          alt={alt}
+          className={className}
+          onError={handleImageError}
+          onLoad={() => setImageLoaded(true)}
+        />
       ) : (
         <Image
           src={imageSrc}
           alt={alt}
-          width={500}
-          height={500}
+          width={isMemberImage ? 200 : 500}
+          height={isMemberImage ? 200 : 500}
           className={className}
           onError={handleImageError}
+          onLoad={() => setImageLoaded(true)}
+          unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+          priority={imageSrc.includes("/images/alumni/")}
         />
       )}
       <input

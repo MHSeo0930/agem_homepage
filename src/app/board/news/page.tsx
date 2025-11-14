@@ -1,58 +1,374 @@
-import News from "@/components/News";
+"use client";
 
-export const metadata = {
-  title: "News | Board",
-  description: "Lab news and announcements",
-};
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import EditableContent from "@/components/EditableContent";
+
+interface NewsItem {
+  id: string;
+  number: number;
+  date: string;
+  title: string;
+  titleKo: string;
+  category: string;
+  categoryKo: string;
+  description: string;
+  descriptionKo: string;
+}
 
 export default function NewsPage() {
-  const allNews = [
+  const { authenticated } = useAuth();
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([
     {
-      date: "2024.01.15",
-      title: "New Research Paper Published",
-      titleKo: "새로운 연구 논문이 발표되었습니다",
+      id: "news-24",
+      number: 24,
+      date: "2025-07-17",
+      title: "2025 우수공학도상 - 우승민",
+      titleKo: "2025 우수공학도상 - 우승민",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우승민 학생이 2025 우수공학도상을 수상했습니다.",
+      descriptionKo: "우승민 학생이 2025 우수공학도상을 수상했습니다.",
+    },
+    {
+      id: "news-23",
+      number: 23,
+      date: "2025-07-17",
+      title: "2025 Nano Korea 우수포스터상 - 우승민",
+      titleKo: "2025 Nano Korea 우수포스터상 - 우승민",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우승민 학생이 2025 Nano Korea 우수포스터상을 수상했습니다.",
+      descriptionKo: "우승민 학생이 2025 Nano Korea 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-22",
+      number: 22,
+      date: "2024-12-09",
+      title: "[Front cover] Adv. Sci. 2402020 (2024)",
+      titleKo: "[Front cover] Adv. Sci. 2402020 (2024)",
       category: "Publication",
       categoryKo: "논문",
-      description: "Our latest work on AI-driven interatomic potentials for hydrogen storage materials has been published in Nature Materials.",
-      descriptionKo: "수소 저장 소재를 위한 AI 기반 원자간 포텐셜에 관한 최신 연구가 Nature Materials에 게재되었습니다.",
+      description: "Advanced Science 2402020 (2024)의 표지 논문으로 선정되었습니다.",
+      descriptionKo: "Advanced Science 2402020 (2024)의 표지 논문으로 선정되었습니다.",
     },
     {
-      date: "2024.01.10",
-      title: "Lab Seminar Announcement",
-      titleKo: "연구실 세미나 개최 안내",
-      category: "Announcement",
-      categoryKo: "공지",
-      description: "Monthly lab seminar will be held on January 20th. All members are welcome to attend.",
-      descriptionKo: "월례 연구실 세미나가 1월 20일에 개최됩니다. 모든 구성원의 참석을 환영합니다.",
+      id: "news-21",
+      number: 21,
+      date: "2024-11-11",
+      title: "[Front cover] Adv. Sci. 2402389 (2024)",
+      titleKo: "[Front cover] Adv. Sci. 2402389 (2024)",
+      category: "Publication",
+      categoryKo: "논문",
+      description: "Advanced Science 2402389 (2024)의 표지 논문으로 선정되었습니다.",
+      descriptionKo: "Advanced Science 2402389 (2024)의 표지 논문으로 선정되었습니다.",
     },
     {
-      date: "2024.01.05",
-      title: "Graduate Student Recruitment",
-      titleKo: "신입 연구원 모집 공고",
+      id: "news-20",
+      number: 20,
+      date: "2024-11-11",
+      title: "[언론보도] ('23.04.03') POSTECH·한국화학연구원·한국재료연구원·부경대 공동연구팀, 버려지는 글리세롤 활용법 개발",
+      titleKo: "[언론보도] ('23.04.03') POSTECH·한국화학연구원·한국재료연구원·부경대 공동연구팀, 버려지는 글리세롤 활용법 개발",
+      category: "Media",
+      categoryKo: "언론보도",
+      description: "POSTECH, 한국화학연구원, 한국재료연구원, 부경대 공동연구팀이 버려지는 글리세롤 활용법을 개발했습니다.",
+      descriptionKo: "POSTECH, 한국화학연구원, 한국재료연구원, 부경대 공동연구팀이 버려지는 글리세롤 활용법을 개발했습니다.",
+    },
+    {
+      id: "news-19",
+      number: 19,
+      date: "2024-11-11",
+      title: "[언론보도] ('24.08.29') 포스텍/국립부경대 '리튬 폴리설파이드' 전환 문제, Ni-Co 촉매 메커니즘으로 해결",
+      titleKo: "[언론보도] ('24.08.29') 포스텍/국립부경대 '리튬 폴리설파이드' 전환 문제, Ni-Co 촉매 메커니즘으로 해결",
+      category: "Media",
+      categoryKo: "언론보도",
+      description: "포스텍/국립부경대 연구팀이 '리튬 폴리설파이드' 전환 문제를 Ni-Co 촉매 메커니즘으로 해결했습니다.",
+      descriptionKo: "포스텍/국립부경대 연구팀이 '리튬 폴리설파이드' 전환 문제를 Ni-Co 촉매 메커니즘으로 해결했습니다.",
+    },
+    {
+      id: "news-18",
+      number: 18,
+      date: "2024-11-11",
+      title: "[언론보도] ('24.08.29') 국립부경대-재료硏-GIST, 수소연료전지 수명 향상 기술 개발",
+      titleKo: "[언론보도] ('24.08.29') 국립부경대-재료硏-GIST, 수소연료전지 수명 향상 기술 개발",
+      category: "Media",
+      categoryKo: "언론보도",
+      description: "국립부경대, 재료硏, GIST 공동 연구팀이 수소연료전지 수명 향상 기술을 개발했습니다.",
+      descriptionKo: "국립부경대, 재료硏, GIST 공동 연구팀이 수소연료전지 수명 향상 기술을 개발했습니다.",
+    },
+    {
+      id: "news-17",
+      number: 17,
+      date: "2024-08-26",
+      title: "[수소중점연구실] H2 NEXT ROUND 선정",
+      titleKo: "[수소중점연구실] H2 NEXT ROUND 선정",
+      category: "Project",
+      categoryKo: "과제",
+      description: "우리 연구실이 H2 NEXT ROUND 수소중점연구실로 선정되었습니다.",
+      descriptionKo: "우리 연구실이 H2 NEXT ROUND 수소중점연구실로 선정되었습니다.",
+    },
+    {
+      id: "news-16",
+      number: 16,
+      date: "2024-08-26",
+      title: "[과제선정] 연구재단 원천기술개발사업 (2024/04/01)",
+      titleKo: "[과제선정] 연구재단 원천기술개발사업 (2024/04/01)",
+      category: "Project",
+      categoryKo: "과제",
+      description: "연구재단 원천기술개발사업에 선정되었습니다.",
+      descriptionKo: "연구재단 원천기술개발사업에 선정되었습니다.",
+    },
+    {
+      id: "news-15",
+      number: 15,
+      date: "2023-12-18",
+      title: "2023 추계 전기화학회 우수포스터상 - 우승민",
+      titleKo: "2023 추계 전기화학회 우수포스터상 - 우승민",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우승민 학생이 2023 추계 전기화학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "우승민 학생이 2023 추계 전기화학회에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-14",
+      number: 14,
+      date: "2023-12-13",
+      title: "2023 추계 표면공화학회(ICSE) 우수포스터상 - 우승민",
+      titleKo: "2023 추계 표면공화학회(ICSE) 우수포스터상 - 우승민",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우승민 학생이 2023 추계 표면공화학회(ICSE)에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "우승민 학생이 2023 추계 표면공화학회(ICSE)에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-13",
+      number: 13,
+      date: "2023-12-01",
+      title: "2023 추계 화상학회 우수포스터상 - 정민경",
+      titleKo: "2023 추계 화상학회 우수포스터상 - 정민경",
+      category: "Award",
+      categoryKo: "수상",
+      description: "정민경 학생이 2023 추계 화상학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "정민경 학생이 2023 추계 화상학회에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-12",
+      number: 12,
+      date: "2022-09-02",
+      title: "[과제선정] 연구재단 중견연구지원사업선정 (2022/09/01)",
+      titleKo: "[과제선정] 연구재단 중견연구지원사업선정 (2022/09/01)",
+      category: "Project",
+      categoryKo: "과제",
+      description: "연구재단 중견연구지원사업에 선정되었습니다.",
+      descriptionKo: "연구재단 중견연구지원사업에 선정되었습니다.",
+    },
+    {
+      id: "news-11",
+      number: 11,
+      date: "2022-09-02",
+      title: "[과제선정] 한국산업기술평가원 소재부품개발사업 (2022/04/01)",
+      titleKo: "[과제선정] 한국산업기술평가원 소재부품개발사업 (2022/04/01)",
+      category: "Project",
+      categoryKo: "과제",
+      description: "한국산업기술평가원 소재부품개발사업에 선정되었습니다.",
+      descriptionKo: "한국산업기술평가원 소재부품개발사업에 선정되었습니다.",
+    },
+    {
+      id: "news-10",
+      number: 10,
+      date: "2022-09-02",
+      title: "[과제선정] 한국산업기술진흥원 소재부품산업거점지원사업 (2022/07/01)",
+      titleKo: "[과제선정] 한국산업기술진흥원 소재부품산업거점지원사업 (2022/07/01)",
+      category: "Project",
+      categoryKo: "과제",
+      description: "한국산업기술진흥원 소재부품산업거점지원사업에 선정되었습니다.",
+      descriptionKo: "한국산업기술진흥원 소재부품산업거점지원사업에 선정되었습니다.",
+    },
+    {
+      id: "news-9",
+      number: 9,
+      date: "2022-08-25",
+      title: "서민호 교수 연구실 학사, 대학원, Post-Doc.연구원 모집.",
+      titleKo: "서민호 교수 연구실 학사, 대학원, Post-Doc.연구원 모집.",
       category: "Recruitment",
       categoryKo: "모집",
-      description: "We are looking for motivated graduate students interested in hydrogen materials and computational modeling.",
-      descriptionKo: "수소 소재 및 계산 모델링에 관심이 있는 의욕적인 대학원생을 모집합니다.",
+      description: "서민호 교수 연구실에서 학사, 대학원, Post-Doc.연구원을 모집합니다.",
+      descriptionKo: "서민호 교수 연구실에서 학사, 대학원, Post-Doc.연구원을 모집합니다.",
     },
     {
-      date: "2023.12.20",
-      title: "Conference Presentation",
-      titleKo: "학회 발표",
-      category: "Achievement",
-      categoryKo: "성과",
-      description: "Lab members presented their research at the International Conference on Electrochemistry in Seoul.",
-      descriptionKo: "연구실 구성원들이 서울에서 개최된 국제 전기화학 학회에서 연구를 발표했습니다.",
+      id: "news-8",
+      number: 8,
+      date: "2022-08-17",
+      title: "[언론보도] ('20. 11. 17) \"산소 빈자리\" 많을수록 온실가스 전환 잘 된다.",
+      titleKo: "[언론보도] ('20. 11. 17) \"산소 빈자리\" 많을수록 온실가스 전환 잘 된다.",
+      category: "Media",
+      categoryKo: "언론보도",
+      description: "\"산소 빈자리\"가 많을수록 온실가스 전환이 잘 된다는 언론 보도입니다.",
+      descriptionKo: "\"산소 빈자리\"가 많을수록 온실가스 전환이 잘 된다는 언론 보도입니다.",
     },
     {
-      date: "2023.12.10",
-      title: "New Lab Equipment Installed",
-      titleKo: "새로운 연구 장비 설치",
+      id: "news-7",
+      number: 7,
+      date: "2022-08-17",
+      title: "2021 KIER 학연 학술상 (원장 표창) - 진 송",
+      titleKo: "2021 KIER 학연 학술상 (원장 표창) - 진 송",
+      category: "Award",
+      categoryKo: "수상",
+      description: "진 송 연구원이 2021 KIER 학연 학술상 (원장 표창)을 수상했습니다.",
+      descriptionKo: "진 송 연구원이 2021 KIER 학연 학술상 (원장 표창)을 수상했습니다.",
+    },
+    {
+      id: "news-6",
+      number: 6,
+      date: "2022-08-17",
+      title: "2021 KIER e-festa Oral 우수상 - 진 송",
+      titleKo: "2021 KIER e-festa Oral 우수상 - 진 송",
+      category: "Award",
+      categoryKo: "수상",
+      description: "진 송 연구원이 2021 KIER e-festa Oral 우수상을 수상했습니다.",
+      descriptionKo: "진 송 연구원이 2021 KIER e-festa Oral 우수상을 수상했습니다.",
+    },
+    {
+      id: "news-5",
+      number: 5,
+      date: "2022-08-09",
+      title: "2022 춘계 표면화학회 우수포스터상 - 박민선",
+      titleKo: "2022 춘계 표면화학회 우수포스터상 - 박민선",
+      category: "Award",
+      categoryKo: "수상",
+      description: "박민선 학생이 2022 춘계 표면화학회 우수포스터상을 수상했습니다.",
+      descriptionKo: "박민선 학생이 2022 춘계 표면화학회 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-4",
+      number: 4,
+      date: "2022-08-09",
+      title: "2022 춘계 전기화학회 우수포스터상 - 우승민",
+      titleKo: "2022 춘계 전기화학회 우수포스터상 - 우승민",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우승민 학생이 2022 춘계 전기화학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "우승민 학생이 2022 춘계 전기화학회에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-3",
+      number: 3,
+      date: "2022-08-09",
+      title: "2022 춘계 한국재료학회 우수포스터상 - 우주완",
+      titleKo: "2022 춘계 한국재료학회 우수포스터상 - 우주완",
+      category: "Award",
+      categoryKo: "수상",
+      description: "우주완 학생이 2022 춘계 한국재료학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "우주완 학생이 2022 춘계 한국재료학회에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-2",
+      number: 2,
+      date: "2022-08-09",
+      title: "2022 춘계 한국화학공학회 우수포스터상 - 김대훈",
+      titleKo: "2022 춘계 한국화학공학회 우수포스터상 - 김대훈",
+      category: "Award",
+      categoryKo: "수상",
+      description: "김대훈 학생이 2022 춘계 한국화학공학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "김대훈 학생이 2022 춘계 한국화학공학회에서 우수포스터상을 수상했습니다.",
+    },
+    {
+      id: "news-1",
+      number: 1,
+      date: "2022-08-09",
+      title: "2022 춘계 한국고분자학회 우수포스터상 - 정민경",
+      titleKo: "2022 춘계 한국고분자학회 우수포스터상 - 정민경",
+      category: "Award",
+      categoryKo: "수상",
+      description: "정민경 학생이 2022 춘계 한국고분자학회에서 우수포스터상을 수상했습니다.",
+      descriptionKo: "정민경 학생이 2022 춘계 한국고분자학회에서 우수포스터상을 수상했습니다.",
+    },
+  ]);
+
+  useEffect(() => {
+    fetch("/api/content")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.news) {
+          try {
+            const parsed = JSON.parse(data.news);
+            setNewsItems(parsed);
+          } catch (e) {
+            console.error("Failed to parse news data");
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (newsId: string, field: string, value: string) => {
+    const updatedNews = newsItems.map((item) =>
+      item.id === newsId ? { ...item, [field]: value } : item
+    );
+    setNewsItems(updatedNews);
+    
+    const response = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
+    });
+    if (!response.ok) throw new Error("Failed to save");
+  };
+
+  const handleAddNews = async () => {
+    const maxNumber = newsItems.length > 0 ? Math.max(...newsItems.map(n => n.number)) : 0;
+    const newNews = {
+      id: `news-${Date.now()}`,
+      number: maxNumber + 1,
+      date: new Date().toISOString().split('T')[0],
+      title: "New News Item",
+      titleKo: "새 소식",
       category: "Announcement",
       categoryKo: "공지",
-      description: "New electrochemical workstation has been installed in the lab for advanced electrocatalysis research.",
-      descriptionKo: "고급 전기화학 촉매 연구를 위한 새로운 전기화학 워크스테이션이 연구실에 설치되었습니다.",
-    },
-  ];
+      description: "Description",
+      descriptionKo: "설명",
+    };
+    const updatedNews = [newNews, ...newsItems].sort((a, b) => b.number - a.number);
+    setNewsItems(updatedNews);
+    
+    const response = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
+    });
+    if (!response.ok) throw new Error("Failed to add news");
+  };
+
+  const handleDeleteNews = async (newsId: string) => {
+    if (!confirm("이 소식을 삭제하시겠습니까?")) return;
+    
+    const updatedNews = newsItems.filter((item) => item.id !== newsId);
+    setNewsItems(updatedNews);
+    
+    const response = await fetch("/api/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
+    });
+    if (!response.ok) throw new Error("Failed to delete news");
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "Award":
+        return "bg-purple-100 text-purple-700";
+      case "Publication":
+        return "bg-blue-100 text-blue-700";
+      case "Media":
+        return "bg-green-100 text-green-700";
+      case "Project":
+        return "bg-orange-100 text-orange-700";
+      case "Recruitment":
+        return "bg-indigo-100 text-indigo-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -78,41 +394,88 @@ export default function NewsPage() {
 
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {allNews.map((item, index) => (
-              <div
-                key={index}
-                className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <span className="inline-block px-3 py-1 text-xs font-semibold text-indigo-600 bg-indigo-100 rounded-full mb-2">
-                      {item.category}
-                      <span className="ml-1 text-gray-500">({item.categoryKo})</span>
-                    </span>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {item.titleKo}
-                    </p>
-                  </div>
-                  <span className="text-sm text-gray-500 ml-4 whitespace-nowrap">{item.date}</span>
-                </div>
-                <div className="pt-3 border-t border-gray-100">
-                  <p className="text-sm text-gray-700 mb-1">
-                    {item.description}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    {item.descriptionKo}
-                  </p>
-                </div>
+          <div className="max-w-5xl mx-auto">
+            {authenticated && (
+              <div className="mb-6 flex justify-end">
+                <button
+                  onClick={handleAddNews}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+                >
+                  + 소식 추가
+                </button>
               </div>
-            ))}
+            )}
+            <div className="space-y-6">
+              {newsItems.sort((a, b) => b.number - a.number).map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow relative group"
+                >
+                  {authenticated && (
+                    <button
+                      onClick={() => handleDeleteNews(item.id)}
+                      className="absolute top-2 right-2 z-20 bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+                      title="소식 삭제"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-blue-600">#{item.number}</span>
+                        <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
+                          {item.category}
+                          <span className="ml-1 text-gray-600">({item.categoryKo})</span>
+                        </span>
+                      </div>
+                      {authenticated ? (
+                        <EditableContent
+                          contentKey={`news-${item.id}-date`}
+                          defaultValue={`<span class="text-sm text-gray-500 whitespace-nowrap">${item.date}</span>`}
+                          onSave={async (content) => {
+                            const tempDiv = document.createElement("div");
+                            tempDiv.innerHTML = content;
+                            const text = tempDiv.textContent || tempDiv.innerText || "";
+                            await handleSave(item.id, "date", text);
+                          }}
+                          isAuthenticated={authenticated}
+                        />
+                      ) : (
+                        <span className="text-sm text-gray-500 whitespace-nowrap">{item.date}</span>
+                      )}
+                    </div>
+                    <EditableContent
+                      contentKey={`news-${item.id}-title`}
+                      defaultValue={`<h3 class="text-lg font-semibold text-gray-900 mb-2">${item.title}</h3>`}
+                      onSave={async (content) => {
+                        const tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = content;
+                        const text = tempDiv.textContent || tempDiv.innerText || "";
+                        await handleSave(item.id, "title", text);
+                      }}
+                      isAuthenticated={authenticated}
+                    />
+                  </div>
+                  <div className="pt-3 border-t border-gray-100">
+                    <EditableContent
+                      contentKey={`news-${item.id}-description`}
+                      defaultValue={`<p class="text-sm text-gray-700">${item.description}</p>`}
+                      onSave={async (content) => {
+                        const tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = content;
+                        const text = tempDiv.textContent || tempDiv.innerText || "";
+                        await handleSave(item.id, "description", text);
+                      }}
+                      isAuthenticated={authenticated}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
     </div>
   );
 }
-
