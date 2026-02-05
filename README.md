@@ -1,4 +1,4 @@
-# 연구실 홈페이지
+# 연구실 홈페이지 (agem_homepage)
 
 Next.js와 Tailwind CSS를 사용하여 제작된 연구실 홈페이지입니다.
 
@@ -114,7 +114,3 @@ ADMIN_PASSWORD=your_secure_password
 
 - 편집된 콘텐츠는 `/data/content.json` 파일에 저장됩니다
 - 이미지는 `/public/uploads/` 폴더에 저장됩니다
-
-
-
-
