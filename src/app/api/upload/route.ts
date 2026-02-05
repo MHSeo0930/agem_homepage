@@ -4,6 +4,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { isAuthenticated } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     if (!(await isAuthenticated())) {

@@ -4,6 +4,8 @@ import { existsSync } from "fs";
 import path from "path";
 import { isAuthenticated } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 const EXCEL_FILE_PATH = path.join(process.cwd(), "data", "journals.xlsx");
 
 async function ensureDataDir() {

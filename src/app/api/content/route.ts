@@ -4,6 +4,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { isAuthenticated } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 const CONTENT_FILE = path.join(process.cwd(), 'data', 'content.json');
 
 async function ensureDataDir() {
