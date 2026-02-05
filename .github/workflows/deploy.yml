@@ -31,13 +31,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          # Puppeteer 등 선택적 의존성으로 인한 CI 실패 방지
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
 
-      # 정적 export 시 API 라우트(서버 전용) 제외 → 빌드 성공
+      # 정적 export 시 API 라우트(서버 전용) 제외
       - name: Exclude API routes for static export
-        run: mv src/app/api src/app/_api_disabled
+        run: |
+          if [ -d src/app/api ]; then mv src/app/api src/app/_api_disabled; fi
 
       - name: Build (static export)
         run: npm run build
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
 
       # 커스텀 도메인(agem.pknu.ac.kr)은 학교 DNS 요청 후 사용. 지금은 github.io로만 서비스
       # - name: Add CNAME for custom domain
