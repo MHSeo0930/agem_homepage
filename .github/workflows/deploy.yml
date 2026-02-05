@@ -39,8 +39,9 @@ jobs:
       - name: Build (static export)
         run: npm run build
 
-      - name: Add CNAME for custom domain
-        run: echo "agem.pknu.ac.kr" > out/CNAME
+      # 커스텀 도메인(agem.pknu.ac.kr)은 학교 DNS 요청 후 사용. 지금은 github.io로만 서비스
+      # - name: Add CNAME for custom domain
+      #   run: echo "agem.pknu.ac.kr" > out/CNAME
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
