@@ -4,9 +4,19 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json();
+    const body = await request.json();
+    const { username, password } = body;
 
-    if (await verifyLogin(username, password)) {
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Username and password are required' },
+        { status: 400 }
+      );
+    }
+
+    const isValid = await verifyLogin(username, password);
+    
+    if (isValid) {
       const cookieStore = await cookies();
       cookieStore.set('admin_session', 'authenticated', {
         httpOnly: true,
@@ -23,8 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
+    console.error('Login API error:', error);
     return NextResponse.json(
-      { success: false, error: 'Server error' },
+      { success: false, error: error instanceof Error ? error.message : 'Server error' },
       { status: 500 }
     );
   }

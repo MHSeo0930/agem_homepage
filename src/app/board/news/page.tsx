@@ -285,26 +285,33 @@ export default function NewsPage() {
     },
   ]);
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.news) {
-          try {
-            const parsed = JSON.parse(data.news);
-            setNewsItems(parsed);
-          } catch (e) {
-            console.error("Failed to parse news data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.news) {
+        try {
+          const parsed = JSON.parse(data.news);
+          setNewsItems(parsed);
+        } catch (e) {
+          console.error("Failed to parse news data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load news data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (newsId: string, field: string, value: string) => {
     const updatedNews = newsItems.map((item) =>
       item.id === newsId ? { ...item, [field]: value } : item
     );
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setNewsItems(updatedNews);
     
     const response = await fetch("/api/content", {
@@ -312,7 +319,17 @@ export default function NewsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setNewsItems(newsItems);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const handleAddNews = async () => {
@@ -337,6 +354,9 @@ export default function NewsPage() {
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
     if (!response.ok) throw new Error("Failed to add news");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleDeleteNews = async (newsId: string) => {
@@ -351,6 +371,9 @@ export default function NewsPage() {
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
     if (!response.ok) throw new Error("Failed to delete news");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const getCategoryColor = (category: string) => {

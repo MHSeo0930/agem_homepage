@@ -22,6 +22,12 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || `Login failed: ${response.status} ${response.statusText}`);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -31,7 +37,8 @@ export default function LoginPage() {
         setError(data.error || "Invalid credentials");
       }
     } catch (err) {
-      setError("Login failed. Please try again.");
+      console.error("Login error:", err);
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }

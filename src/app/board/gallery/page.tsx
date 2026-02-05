@@ -169,20 +169,25 @@ export default function GalleryPage() {
     },
   ]);
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.gallery) {
-          try {
-            const parsed = JSON.parse(data.gallery);
-            setGalleryItems(parsed);
-          } catch (e) {
-            console.error("Failed to parse gallery data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.gallery) {
+        try {
+          const parsed = JSON.parse(data.gallery);
+          setGalleryItems(parsed);
+        } catch (e) {
+          console.error("Failed to parse gallery data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load gallery data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   // ESC 키로 모달 닫기
@@ -208,6 +213,8 @@ export default function GalleryPage() {
     const updatedGallery = galleryItems.map((item) =>
       item.id === galleryId ? { ...item, [field]: value } : item
     );
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setGalleryItems(updatedGallery);
     
     const response = await fetch("/api/content", {
@@ -215,7 +222,17 @@ export default function GalleryPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setGalleryItems(galleryItems);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const handleImageSave = async (galleryId: string, imageUrl: string) => {
@@ -240,6 +257,9 @@ export default function GalleryPage() {
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) throw new Error("Failed to add gallery");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleDeleteGallery = async (galleryId: string) => {
@@ -254,6 +274,9 @@ export default function GalleryPage() {
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) throw new Error("Failed to delete gallery");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const sortedItems = [...galleryItems].sort((a, b) => a.number - b.number);

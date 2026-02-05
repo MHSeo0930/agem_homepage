@@ -115,3 +115,6 @@ ADMIN_PASSWORD=your_secure_password
 - 편집된 콘텐츠는 `/data/content.json` 파일에 저장됩니다
 - 이미지는 `/public/uploads/` 폴더에 저장됩니다
 
+
+
+

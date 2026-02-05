@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -62,44 +62,78 @@ export default function News() {
     descriptionKo: "연구실의 최신 소식과 공지사항을 확인하세요.",
   });
   const [newsItems, setNewsItems] = useState<NewsItem[]>(defaultNewsItems);
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.news) {
-          try {
-            const parsed = JSON.parse(data.news);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              // number 기준 내림차순 정렬 (높은 number가 최신) 후 최신 3개만 표시
-              const sortedNews = parsed.sort((a: NewsItem, b: NewsItem) => b.number - a.number);
-              setNewsItems(sortedNews.slice(0, 3));
-            } else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-              // newsData가 객체인 경우 (제목, 설명 등)
-              setNewsData(parsed);
-            }
-          } catch (e) {
-            console.error("Failed to parse news data", e);
-            // 파싱 실패 시 기본 데이터 사용
-            const sortedNews = defaultNewsItems.sort((a, b) => b.number - a.number);
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      
+      // newsData 로드 (제목, 설명 등)
+      if (data.newsData) {
+        try {
+          const parsed = JSON.parse(data.newsData);
+          if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+            // 서버에서 가져온 값이 빈 문자열이면 현재 상태 유지 (덮어쓰지 않음)
+            setNewsData(prev => {
+              const serverTitle = parsed.title && parsed.title.trim();
+              const serverTitleKo = parsed.titleKo && parsed.titleKo.trim();
+              const serverDescription = parsed.description && parsed.description.trim();
+              const serverDescriptionKo = parsed.descriptionKo && parsed.descriptionKo.trim();
+              
+              return {
+                ...prev,
+                // 서버 값이 빈 문자열이면 현재 상태 유지, 아니면 서버 값 사용
+                title: serverTitle ? serverTitle : prev.title,
+                titleKo: serverTitleKo ? serverTitleKo : prev.titleKo,
+                description: serverDescription ? serverDescription : prev.description,
+                descriptionKo: serverDescriptionKo ? serverDescriptionKo : prev.descriptionKo,
+              };
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse newsData", e);
+        }
+      }
+      
+      // newsItems 로드 (뉴스 아이템 배열)
+      if (data.news) {
+        try {
+          const parsed = JSON.parse(data.news);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // number 기준 내림차순 정렬 (높은 number가 최신) 후 최신 3개만 표시
+            const sortedNews = parsed.sort((a: NewsItem, b: NewsItem) => b.number - a.number);
             setNewsItems(sortedNews.slice(0, 3));
           }
-        } else {
-          // API에 데이터가 없는 경우 기본 데이터 사용
+        } catch (e) {
+          console.error("Failed to parse news items", e);
+          // 파싱 실패 시 기본 데이터 사용
           const sortedNews = defaultNewsItems.sort((a, b) => b.number - a.number);
           setNewsItems(sortedNews.slice(0, 3));
         }
-      })
-      .catch((error) => {
-        console.error("Failed to fetch news data", error);
-        // API 호출 실패 시 기본 데이터 사용
+      } else {
+        // API에 데이터가 없는 경우 기본 데이터 사용
         const sortedNews = defaultNewsItems.sort((a, b) => b.number - a.number);
         setNewsItems(sortedNews.slice(0, 3));
-      });
+      }
+      setIsDataLoaded(true); // 데이터 로드 완료
+    } catch (error) {
+      console.error("Failed to fetch news data", error);
+      // API 호출 실패 시 기본 데이터 사용
+      const sortedNews = defaultNewsItems.sort((a, b) => b.number - a.number);
+      setNewsItems(sortedNews.slice(0, 3));
+      setIsDataLoaded(true); // 에러가 발생해도 로드 완료로 표시
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (field: string, value: string) => {
     const updatedData = { ...newsData, [field]: value };
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setNewsData(updatedData);
     
     const response = await fetch("/api/content", {
@@ -107,7 +141,17 @@ export default function News() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedData) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setNewsData(newsData);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const getCategoryColor = (category: string) => {
@@ -136,13 +180,26 @@ export default function News() {
     }
   };
 
+  // defaultValue를 useMemo로 메모이제이션하여 불필요한 재생성 방지
+  const titleDefaultValue = useMemo(() => 
+    `<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${newsData?.title || "News & Updates"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${newsData?.titleKo || "최신 소식"}</span></h2>`,
+    [newsData?.title, newsData?.titleKo]
+  );
+  
+  const descriptionDefaultValue = useMemo(() => {
+    // 빈 문자열도 체크하여 기본값 사용 방지
+    const description = newsData?.description?.trim() || "Stay updated with the latest news and announcements from our lab.";
+    const descriptionKo = newsData?.descriptionKo?.trim() || "연구실의 최신 소식과 공지사항을 확인하세요.";
+    return `<p class="text-base text-gray-600 max-w-2xl mx-auto">${description}<br /><span class="text-sm text-gray-500">${descriptionKo}</span></p>`;
+  }, [newsData?.description, newsData?.descriptionKo]);
+
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <EditableContent
             contentKey="news-title"
-            defaultValue={`<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${newsData?.title || "News & Updates"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${newsData?.titleKo || "최신 소식"}</span></h2>`}
+            defaultValue={titleDefaultValue}
             onSave={async (content) => {
               const tempDiv = document.createElement("div");
               tempDiv.innerHTML = content;
@@ -151,26 +208,91 @@ export default function News() {
               if (titleElement) {
                 const titleText = titleElement.childNodes[0]?.textContent || "";
                 const titleKoText = titleKoElement?.textContent || "";
-                await handleSave("title", titleText);
-                await handleSave("titleKo", titleKoText);
+                
+                // 두 필드를 한 번에 저장
+                const updatedData = { 
+                  ...newsData, 
+                  title: titleText.trim(),
+                  titleKo: titleKoText.trim()
+                };
+                
+                // API에 먼저 저장
+                const response = await fetch("/api/content", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
+                });
+                if (!response.ok) {
+                  throw new Error("Failed to save");
+                }
+                
+                // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
+                // loadData()를 호출하지 않음 - 저장한 데이터를 직접 사용하여 덮어쓰기 방지
+                setNewsData(updatedData);
               }
             }}
             isAuthenticated={authenticated}
           />
-          <EditableContent
-            contentKey="news-description"
-            defaultValue={`<p class="text-base text-gray-600 max-w-2xl mx-auto">${newsData?.description || "Stay updated with the latest news and announcements from our lab."}<br /><span class="text-sm text-gray-500">${newsData?.descriptionKo || "연구실의 최신 소식과 공지사항을 확인하세요."}</span></p>`}
-            onSave={async (content) => {
+          {isDataLoaded && (
+            <EditableContent
+              contentKey="news-description"
+              defaultValue={descriptionDefaultValue}
+              onSave={async (content) => {
               const tempDiv = document.createElement("div");
               tempDiv.innerHTML = content;
-              const descriptionText = tempDiv.childNodes[0]?.textContent || "";
-              const descriptionKoElement = tempDiv.querySelector("span");
-              const descriptionKoText = descriptionKoElement?.textContent || "";
-              await handleSave("description", descriptionText);
-              await handleSave("descriptionKo", descriptionKoText);
+              const pElement = tempDiv.querySelector("p");
+              const spanElement = tempDiv.querySelector("span");
+              
+              // p 태그에서 span을 제외한 텍스트 추출
+              let descriptionText = "";
+              if (pElement) {
+                const pClone = pElement.cloneNode(true) as HTMLElement;
+                const spanInP = pClone.querySelector("span");
+                if (spanInP) {
+                  spanInP.remove();
+                }
+                // <br /> 태그도 제거하고 텍스트만 추출
+                const brTags = pClone.querySelectorAll("br");
+                brTags.forEach(br => br.remove());
+                descriptionText = pClone.textContent || pClone.innerText || "";
+              }
+              
+              // span 태그의 텍스트 추출
+              const descriptionKoText = spanElement?.textContent || spanElement?.innerText || "";
+              
+              // 두 필드를 한 번에 저장
+              const updatedData = { 
+                ...newsData, 
+                description: descriptionText.trim(),
+                descriptionKo: descriptionKoText.trim()
+              };
+              
+              // API에 먼저 저장
+              const response = await fetch("/api/content", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
+              });
+              if (!response.ok) {
+                throw new Error("Failed to save");
+              }
+              
+              // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
+              // loadData()를 호출하지 않음 - 저장한 데이터를 직접 사용하여 덮어쓰기 방지
+              setNewsData(updatedData);
             }}
             isAuthenticated={authenticated}
-          />
+            />
+          )}
+          {!isDataLoaded && (
+            <p className="text-base text-gray-600 max-w-2xl mx-auto">
+              {newsData?.description || "Stay updated with the latest news and announcements from our lab."}
+              <br />
+              <span className="text-sm text-gray-500">
+                {newsData?.descriptionKo || "연구실의 최신 소식과 공지사항을 확인하세요."}
+              </span>
+            </p>
+          )}
         </div>
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -215,3 +337,5 @@ export default function News() {
     </section>
   );
 }
+
+

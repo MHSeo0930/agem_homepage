@@ -10,6 +10,8 @@ interface EditableImageProps {
   onSave: (url: string) => Promise<void>;
   isAuthenticated: boolean;
   className?: string;
+  fill?: boolean;
+  sizes?: string;
 }
 
 export default function EditableImage({
@@ -19,6 +21,8 @@ export default function EditableImage({
   onSave,
   isAuthenticated,
   className = "",
+  fill = false,
+  sizes,
 }: EditableImageProps) {
   const [imageSrc, setImageSrc] = useState(src);
   const [uploading, setUploading] = useState(false);
@@ -86,6 +90,18 @@ export default function EditableImage({
             onError={handleImageError}
             onLoad={() => setImageLoaded(true)}
           />
+        ) : fill ? (
+          <Image
+            src={imageSrc}
+            alt={alt}
+            fill
+            sizes={sizes}
+            className={className}
+            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+            unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+            priority={imageSrc.includes("/images/alumni/")}
+          />
         ) : (
           <Image
             src={imageSrc}
@@ -104,19 +120,42 @@ export default function EditableImage({
   }
 
   return (
-    <div className="relative group">
+    <div className="relative group w-full h-full">
       {showPlaceholder ? (
-        <div className={`${className} bg-gray-200 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 transition-colors`}>
+        <div className={`w-full h-full bg-gray-200 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 transition-colors`}>
           <span className="text-gray-400 text-4xl mb-2">{isGalleryImage ? "📸" : "👤"}</span>
           <span className="text-xs text-gray-500">{isGalleryImage ? "이미지 없음" : "사진 없음"}</span>
         </div>
       ) : isPngImage && isMemberImage ? (
-        <img
+        fill ? (
+          <img
+            src={imageSrc}
+            alt={alt}
+            className={`${className} w-full h-full`}
+            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+            style={{ objectFit: 'cover' }}
+          />
+        ) : (
+          <img
+            src={imageSrc}
+            alt={alt}
+            className={className}
+            onError={handleImageError}
+            onLoad={() => setImageLoaded(true)}
+          />
+        )
+      ) : fill ? (
+        <Image
           src={imageSrc}
           alt={alt}
+          fill
+          sizes={sizes}
           className={className}
           onError={handleImageError}
           onLoad={() => setImageLoaded(true)}
+          unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+          priority={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/professor")}
         />
       ) : (
         <Image

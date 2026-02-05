@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
 
@@ -39,11 +39,72 @@ export default function EditableContent({
   const quillRef = useRef<any>(null);
   const quillInstanceRef = useRef<any>(null);
 
+  // defaultValue 변경 추적을 위한 ref
+  const prevDefaultValueRef = useRef<string>(defaultValue);
+  const isInitialMountRef = useRef<boolean>(true);
+  const justSavedRef = useRef<boolean>(false); // 저장 직후인지 추적
+  
+  // HTML 정규화 함수 (비교를 위해)
+  const normalizeHTML = (html: string): string => {
+    if (!html) return '';
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    return tempDiv.innerHTML;
+  };
+  
   useEffect(() => {
-    if (!isEditing) {
+    // 초기 마운트 시에는 defaultValue로 설정
+    if (isInitialMountRef.current) {
       setDisplayContent(defaultValue);
+      prevDefaultValueRef.current = defaultValue;
+      isInitialMountRef.current = false;
+      return;
     }
-  }, [defaultValue, isEditing]);
+    
+    // 편집 중이 아닐 때만 defaultValue를 displayContent에 반영
+    // 편집 중일 때는 사용자가 입력한 내용을 유지
+    if (!isEditing && !saving) {
+      // HTML을 정규화하여 비교 (공백, 속성 순서 등 차이 무시)
+      const normalizedDefault = normalizeHTML(defaultValue || '');
+      const normalizedPrev = normalizeHTML(prevDefaultValueRef.current || '');
+      const normalizedDisplay = normalizeHTML(displayContent || '');
+      
+      // defaultValue가 실제로 변경되었는지 확인
+      const defaultValueChanged = normalizedDefault !== normalizedPrev;
+      
+      // 저장 직후인지 확인
+      if (justSavedRef.current) {
+        // 저장 직후: 저장한 내용(displayContent)을 유지하고, 새로운 defaultValue와 동기화
+        // 저장한 내용과 새로운 defaultValue가 같으면 (정규화 후) 이미 동기화됨
+        if (normalizedDisplay === normalizedDefault) {
+          // 저장한 내용과 새로운 defaultValue가 같으면 prevDefaultValueRef만 업데이트
+          prevDefaultValueRef.current = defaultValue;
+        } else {
+          // 저장한 내용과 새로운 defaultValue가 다르면 저장한 내용 유지
+          // (부모 컴포넌트의 상태 업데이트가 완료되지 않았을 수 있음)
+          // prevDefaultValueRef는 저장한 내용으로 유지하여 덮어쓰지 않도록 함
+          // 다음 렌더링 사이클에서 다시 확인됨
+        }
+        // 저장 직후 플래그 리셋
+        justSavedRef.current = false;
+        return; // 저장 직후에는 더 이상 처리하지 않음
+      }
+      
+      // 저장 직후가 아닌 경우
+      if (defaultValueChanged && defaultValue) {
+        // defaultValue가 변경되었으면 항상 업데이트 (페이지 이동 후 돌아온 경우 포함)
+        // 하지만 displayContent와 새로운 defaultValue가 같으면 업데이트 불필요
+        if (normalizedDisplay !== normalizedDefault) {
+          setDisplayContent(defaultValue);
+        }
+        prevDefaultValueRef.current = defaultValue;
+      } else if (!defaultValueChanged && defaultValue && normalizedDefault !== normalizedDisplay) {
+        // defaultValue는 같지만 displayContent가 다른 경우 (초기 로드 시 동기화)
+        setDisplayContent(defaultValue);
+        prevDefaultValueRef.current = defaultValue;
+      }
+    }
+  }, [defaultValue, isEditing, saving]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -72,14 +133,27 @@ export default function EditableContent({
         htmlContent = displayContent || defaultValue;
       }
       
-      await onSave(htmlContent);
+      // 저장된 내용을 먼저 표시 (UI 즉시 반영)
       setDisplayContent(htmlContent);
+      
+      // 편집 모드 종료
       setIsEditing(false);
+      
+      // 저장 직후 플래그 설정
+      justSavedRef.current = true;
+      
+      // 부모 컴포넌트에 저장 요청
+      await onSave(htmlContent);
+      
+      // 저장 완료 후 quill 초기화
       setQuillKey(prev => prev + 1); // 다음 편집을 위해 key 증가
       quillInstanceRef.current = null; // ref 초기화
+      
+      // 저장 직후 플래그는 useEffect에서 처리한 후 리셋됨
     } catch (error) {
       console.error("Save error:", error);
       alert("Failed to save content");
+      // 에러 발생 시 편집 모드로 복귀하지 않음 (이미 setIsEditing(false) 호출됨)
     } finally {
       setSaving(false);
     }

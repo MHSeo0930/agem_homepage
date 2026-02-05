@@ -70,26 +70,33 @@ export default function AlumniPage() {
     },
   ]);
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.alumni) {
-          try {
-            const parsed = JSON.parse(data.alumni);
-            setAlumni(parsed);
-          } catch (e) {
-            console.error("Failed to parse alumni data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.alumni) {
+        try {
+          const parsed = JSON.parse(data.alumni);
+          setAlumni(parsed);
+        } catch (e) {
+          console.error("Failed to parse alumni data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load alumni data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (alumnusId: string, field: string, value: string) => {
     const updatedAlumni = alumni.map((alumnus) =>
       alumnus.id === alumnusId ? { ...alumnus, [field]: value } : alumnus
     );
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setAlumni(updatedAlumni);
     
     const response = await fetch("/api/content", {
@@ -97,7 +104,17 @@ export default function AlumniPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setAlumni(alumni);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const handleImageSave = async (alumnusId: string, imageUrl: string) => {
@@ -126,6 +143,9 @@ export default function AlumniPage() {
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) throw new Error("Failed to add alumni");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleDeleteAlumnus = async (alumnusId: string) => {
@@ -140,6 +160,9 @@ export default function AlumniPage() {
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) throw new Error("Failed to delete alumni");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   return (

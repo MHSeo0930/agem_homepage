@@ -12,6 +12,11 @@
 /.next/
 /out/
 
+# env (do not commit secrets)
+.env
+.env.local
+.env.*.local
+
 # production
 /build
 
@@ -33,4 +38,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data files (will be created at runtime on Vercel)
+# Note: Keep data folder structure but ignore runtime-generated files
+data/*.json
+data/*.xlsx
+!data/.gitkeep
+
+# local backups (optional: remove this block if you want to track backups)
+backup_*/
+
+
+
 

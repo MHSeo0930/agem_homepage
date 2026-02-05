@@ -33,24 +33,31 @@ export default function Contact() {
     researchGateLink: "https://www.researchgate.net/profile/Min-Ho-Seo-2?ev=hdr_xprf",
   });
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.contact) {
-          try {
-            const parsed = JSON.parse(data.contact);
-            setContactData(parsed);
-          } catch (e) {
-            console.error("Failed to parse contact data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.contact) {
+        try {
+          const parsed = JSON.parse(data.contact);
+          setContactData(parsed);
+        } catch (e) {
+          console.error("Failed to parse contact data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load contact data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (field: string, value: string) => {
     const updatedData = { ...contactData, [field]: value };
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setContactData(updatedData);
     
     const response = await fetch("/api/content", {
@@ -58,7 +65,17 @@ export default function Contact() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contact: JSON.stringify(updatedData) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setContactData(contactData);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   return (

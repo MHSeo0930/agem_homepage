@@ -77,8 +77,8 @@ export default function Header() {
           >
             <button
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center"
-            >
-              Research
+          >
+            Research
               <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -119,7 +119,7 @@ export default function Header() {
                   </Link>
                   <Link href="/achievements/conference" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Conference
-                  </Link>
+          </Link>
                 </div>
               </div>
             )}
@@ -133,7 +133,7 @@ export default function Header() {
           >
             <button
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center"
-            >
+          >
               Board
               <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -147,7 +147,7 @@ export default function Header() {
                   </Link>
                   <Link href="/board/gallery" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Gallery
-                  </Link>
+          </Link>
                 </div>
               </div>
             )}
@@ -161,7 +161,7 @@ export default function Header() {
           >
             <button
               className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors flex items-center"
-            >
+          >
               About Lab.
               <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -172,7 +172,7 @@ export default function Header() {
                 <div className="bg-white rounded-md shadow-lg border border-gray-200 py-2">
                   <Link href="/about-lab/map" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Map
-                  </Link>
+          </Link>
                 </div>
               </div>
             )}
@@ -182,20 +182,12 @@ export default function Header() {
           {!loading && (
             <div className="ml-4 pl-4 border-l border-gray-200">
               {authenticated ? (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/admin"
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-                  >
-                    Admin
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Logout
+                </button>
               ) : (
                 <Link
                   href="/admin/login"
@@ -227,19 +219,19 @@ export default function Header() {
               />
             </svg>
           ) : (
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
           )}
         </button>
       </div>
@@ -341,24 +333,15 @@ export default function Header() {
             {!loading && (
               <div className="pt-3 border-t border-gray-200">
                 {authenticated ? (
-                  <>
-                    <Link
-                      href="/admin"
-                      className="block text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors mb-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Admin
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="block text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors w-full text-left"
-                    >
-                      Logout
-                    </button>
-                  </>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="block text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors w-full text-left"
+                  >
+                    Logout
+                  </button>
                 ) : (
                   <Link
                     href="/admin/login"
@@ -376,3 +359,6 @@ export default function Header() {
     </header>
   );
 }
+
+
+

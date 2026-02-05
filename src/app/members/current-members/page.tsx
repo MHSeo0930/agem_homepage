@@ -143,26 +143,33 @@ export default function CurrentMembersPage() {
     },
   ]);
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.members) {
-          try {
-            const parsed = JSON.parse(data.members);
-            setMembers(parsed);
-          } catch (e) {
-            console.error("Failed to parse members data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.members) {
+        try {
+          const parsed = JSON.parse(data.members);
+          setMembers(parsed);
+        } catch (e) {
+          console.error("Failed to parse members data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load members data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (memberId: string, field: string, value: string) => {
     const updatedMembers = members.map((member) =>
       member.id === memberId ? { ...member, [field]: value } : member
     );
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setMembers(updatedMembers);
     
     const response = await fetch("/api/content", {
@@ -170,7 +177,17 @@ export default function CurrentMembersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setMembers(members);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const handleImageSave = async (memberId: string, imageUrl: string) => {
@@ -200,6 +217,9 @@ export default function CurrentMembersPage() {
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) throw new Error("Failed to add member");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleDeleteMember = async (memberId: string) => {
@@ -214,6 +234,9 @@ export default function CurrentMembersPage() {
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) throw new Error("Failed to delete member");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   return (

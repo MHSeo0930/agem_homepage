@@ -31,24 +31,31 @@ export default function Research() {
     ],
   });
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.research) {
-          try {
-            const parsed = JSON.parse(data.research);
-            setResearchData(parsed);
-          } catch (e) {
-            console.error("Failed to parse research data");
-          }
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.research) {
+        try {
+          const parsed = JSON.parse(data.research);
+          setResearchData(parsed);
+        } catch (e) {
+          console.error("Failed to parse research data");
         }
-      })
-      .catch(() => {});
+      }
+    } catch (error) {
+      console.error("Failed to load research data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (field: string, value: string) => {
     const updatedData = { ...researchData, [field]: value };
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
     const response = await fetch("/api/content", {
@@ -56,13 +63,25 @@ export default function Research() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ research: JSON.stringify(updatedData) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setResearchData(researchData);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   const handleCategorySave = async (index: number, field: string, value: string) => {
     const updatedCategories = [...researchData.categories];
     updatedCategories[index] = { ...updatedCategories[index], [field]: value };
     const updatedData = { ...researchData, categories: updatedCategories };
+    
+    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
     const response = await fetch("/api/content", {
@@ -70,7 +89,17 @@ export default function Research() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ research: JSON.stringify(updatedData) }),
     });
-    if (!response.ok) throw new Error("Failed to save");
+    if (!response.ok) {
+      // 실패 시 이전 상태로 복원
+      setResearchData(researchData);
+      throw new Error("Failed to save");
+    }
+    
+    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    setTimeout(async () => {
+      await loadData();
+    }, 50);
   };
 
   return (
@@ -223,4 +252,7 @@ export default function Research() {
     </section>
   );
 }
+
+
+
 

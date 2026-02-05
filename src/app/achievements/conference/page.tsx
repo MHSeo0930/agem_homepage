@@ -6,6 +6,12 @@ import EditableContent from "@/components/EditableContent";
 
 export default function ConferencePage() {
   const { authenticated } = useAuth();
+  const [pageData, setPageData] = useState({
+    title: "Conference Presentations",
+    titleKo: "학회 발표",
+    description: "Conference (Selected)",
+    descriptionKo: "학회 발표 (선택)",
+  });
   const [conferences, setConferences] = useState([
     {
       id: "conf-20",
@@ -209,23 +215,49 @@ export default function ConferencePage() {
     },
   ]);
 
-  useEffect(() => {
-    fetch("/api/content")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.conferences) {
-          try {
-            const parsed = JSON.parse(data.conferences);
+  const loadData = async () => {
+    try {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      if (data.conferences) {
+        try {
+          const parsed = JSON.parse(data.conferences);
+          // 배열인지 확인
+          if (Array.isArray(parsed)) {
             setConferences(parsed);
-          } catch (e) {
-            console.error("Failed to parse conferences data");
           }
+        } catch (e) {
+          console.error("Failed to parse conferences data");
         }
-      })
-      .catch(() => {});
+      }
+      
+      // 페이지 데이터 로드
+      if (data.conferencePage) {
+        try {
+          const parsed = JSON.parse(data.conferencePage);
+          if (parsed && typeof parsed === 'object') {
+            setPageData(prev => ({ ...prev, ...parsed }));
+          }
+        } catch (e) {
+          console.error("Failed to parse conference page data");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load conferences data", error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const handleSave = async (confId: string, field: string, value: string) => {
+    // 배열이 아닌 경우 처리
+    if (!Array.isArray(conferences)) {
+      console.error("Conferences is not an array");
+      return;
+    }
+    
     const updatedConferences = conferences.map((conf) =>
       conf.id === confId ? { ...conf, [field]: value } : conf
     );
@@ -237,9 +269,18 @@ export default function ConferencePage() {
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to save");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleAddConference = async () => {
+    // 배열이 아닌 경우 처리
+    if (!Array.isArray(conferences)) {
+      console.error("Conferences is not an array");
+      return;
+    }
+    
     const maxNumber = conferences.length > 0 ? Math.max(...conferences.map(c => c.number)) : 0;
     const newConference = {
       id: `conf-${Date.now()}`,
@@ -260,10 +301,19 @@ export default function ConferencePage() {
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to add conference");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   const handleDeleteConference = async (confId: string) => {
     if (!confirm("이 학회 발표를 삭제하시겠습니까?")) return;
+    
+    // 배열이 아닌 경우 처리
+    if (!Array.isArray(conferences)) {
+      console.error("Conferences is not an array");
+      return;
+    }
     
     const updatedConferences = conferences.filter((conf) => conf.id !== confId);
     setConferences(updatedConferences);
@@ -274,6 +324,9 @@ export default function ConferencePage() {
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to delete conference");
+    
+    // 저장 후 데이터 다시 로드
+    await loadData();
   };
 
   return (
@@ -281,19 +334,101 @@ export default function ConferencePage() {
       <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Conference Presentations
-              <span className="block text-3xl md:text-4xl text-gray-600 font-normal mt-2">
-                학회 발표
-              </span>
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Conference (Selected)
-              <br />
-              <span className="text-base text-gray-500">
-                학회 발표 (선택)
-              </span>
-            </p>
+            <EditableContent
+              contentKey="conference-page-title"
+              defaultValue={`<h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">${pageData?.title || "Conference Presentations"}<span class="block text-3xl md:text-4xl text-gray-600 font-normal mt-2">${pageData?.titleKo || "학회 발표"}</span></h1>`}
+              onSave={async (content) => {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = content;
+                const titleElement = tempDiv.querySelector("h1");
+                const titleKoElement = tempDiv.querySelector("span");
+                if (titleElement) {
+                  const titleText = titleElement.childNodes[0]?.textContent || "";
+                  const titleKoText = titleKoElement?.textContent || "";
+                  
+                  // 두 필드를 한 번에 저장
+                  const updatedData = { 
+                    ...pageData, 
+                    title: titleText.trim(),
+                    titleKo: titleKoText.trim()
+                  };
+                  
+                  // 먼저 상태를 업데이트하여 UI에 즉시 반영
+                  setPageData(updatedData);
+                  
+                  const response = await fetch("/api/content", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
+                  });
+                  if (!response.ok) {
+                    // 실패 시 이전 상태로 복원
+                    setPageData(pageData);
+                    throw new Error("Failed to save");
+                  }
+                  
+                  // 저장 후 데이터 다시 로드하여 서버와 동기화
+                  setTimeout(async () => {
+                    await loadData();
+                  }, 50);
+                }
+              }}
+              isAuthenticated={authenticated}
+            />
+            <EditableContent
+              contentKey="conference-page-description"
+              defaultValue={`<p class="text-lg text-gray-600 max-w-2xl mx-auto">${pageData?.description || "Conference (Selected)"}<br /><span class="text-base text-gray-500">${pageData?.descriptionKo || "학회 발표 (선택)"}</span></p>`}
+              onSave={async (content) => {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = content;
+                const pElement = tempDiv.querySelector("p");
+                const spanElement = tempDiv.querySelector("span");
+                
+                // p 태그에서 span을 제외한 텍스트 추출
+                let descriptionText = "";
+                if (pElement) {
+                  const pClone = pElement.cloneNode(true) as HTMLElement;
+                  const spanInP = pClone.querySelector("span");
+                  if (spanInP) {
+                    spanInP.remove();
+                  }
+                  // <br /> 태그도 제거하고 텍스트만 추출
+                  const brTags = pClone.querySelectorAll("br");
+                  brTags.forEach(br => br.remove());
+                  descriptionText = pClone.textContent || pClone.innerText || "";
+                }
+                
+                // span 태그의 텍스트 추출
+                const descriptionKoText = spanElement?.textContent || spanElement?.innerText || "";
+                
+                // 두 필드를 한 번에 저장
+                const updatedData = { 
+                  ...pageData, 
+                  description: descriptionText.trim(),
+                  descriptionKo: descriptionKoText.trim()
+                };
+                
+                // 먼저 상태를 업데이트하여 UI에 즉시 반영
+                setPageData(updatedData);
+                
+                const response = await fetch("/api/content", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
+                });
+                if (!response.ok) {
+                  // 실패 시 이전 상태로 복원
+                  setPageData(pageData);
+                  throw new Error("Failed to save");
+                }
+                
+                // 저장 후 데이터 다시 로드하여 서버와 동기화
+                setTimeout(async () => {
+                  await loadData();
+                }, 50);
+              }}
+              isAuthenticated={authenticated}
+            />
           </div>
         </div>
       </section>
@@ -312,7 +447,7 @@ export default function ConferencePage() {
               </div>
             )}
             <div className="space-y-6">
-              {conferences.sort((a, b) => b.number - a.number).map((conf) => (
+              {Array.isArray(conferences) ? conferences.sort((a, b) => b.number - a.number).map((conf) => (
                 <div
                   key={conf.id}
                   className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group"
@@ -390,7 +525,11 @@ export default function ConferencePage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center text-gray-500 py-8">
+                  학회 발표 데이터를 불러오는 중...
+                </div>
+              )}
             </div>
           </div>
         </div>
