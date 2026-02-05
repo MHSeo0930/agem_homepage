@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { getApiBase } from "@/lib/apiBase";
 
 interface EditableImageProps {
   src: string;
@@ -47,7 +48,7 @@ export default function EditableImage({
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload", {
+      const response = await fetch(`${getApiBase()}/api/upload`, {
         method: "POST",
         body: formData,
       });

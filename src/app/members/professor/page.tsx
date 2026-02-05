@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
 
@@ -141,7 +142,7 @@ export default function ProfessorPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.professor) {
         try {
@@ -166,7 +167,7 @@ export default function ProfessorPage() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setProfessorData(updatedData);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ professor: JSON.stringify(updatedData) }),

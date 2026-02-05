@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { getApiBase } from "@/lib/apiBase";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
@@ -173,7 +174,7 @@ export default function EditableContent({
       formData.append("file", file);
 
       try {
-        const response = await fetch("/api/upload", {
+        const response = await fetch(`${getApiBase()}/api/upload`, {
           method: "POST",
           body: formData,
         });

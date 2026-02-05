@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 
 export default function ConferencePage() {
@@ -217,7 +218,7 @@ export default function ConferencePage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.conferences) {
         try {
@@ -263,7 +264,7 @@ export default function ConferencePage() {
     );
     setConferences(updatedConferences);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
@@ -295,7 +296,7 @@ export default function ConferencePage() {
     const updatedConferences = [newConference, ...conferences].sort((a, b) => b.number - a.number);
     setConferences(updatedConferences);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
@@ -318,7 +319,7 @@ export default function ConferencePage() {
     const updatedConferences = conferences.filter((conf) => conf.id !== confId);
     setConferences(updatedConferences);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
@@ -356,7 +357,7 @@ export default function ConferencePage() {
                   // 먼저 상태를 업데이트하여 UI에 즉시 반영
                   setPageData(updatedData);
                   
-                  const response = await fetch("/api/content", {
+                  const response = await fetch(`${getApiBase()}/api/content`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
@@ -411,7 +412,7 @@ export default function ConferencePage() {
                 // 먼저 상태를 업데이트하여 UI에 즉시 반영
                 setPageData(updatedData);
                 
-                const response = await fetch("/api/content", {
+                const response = await fetch(`${getApiBase()}/api/content`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),

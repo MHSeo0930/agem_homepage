@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import EditableContent from "@/components/EditableContent";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function AIComputationalChemistryPage() {
   const { authenticated } = useAuth();
@@ -39,7 +40,7 @@ export default function AIComputationalChemistryPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.aiComputationalChemistry) {
         try {
@@ -86,7 +87,7 @@ export default function AIComputationalChemistryPage() {
     const updatedData = { ...pageData, [field]: value };
     
     // API에 먼저 저장
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aiComputationalChemistry: JSON.stringify(updatedData) }),
@@ -106,7 +107,7 @@ export default function AIComputationalChemistryPage() {
     const updatedData = { ...pageData, researchTopics: updatedTopics };
     
     // API에 먼저 저장
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aiComputationalChemistry: JSON.stringify(updatedData) }),
@@ -161,7 +162,7 @@ export default function AIComputationalChemistryPage() {
                       };
                       
                       // API에 먼저 저장
-                      const response = await fetch("/api/content", {
+                      const response = await fetch(`${getApiBase()}/api/content`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ aiComputationalChemistry: JSON.stringify(updatedData) }),
@@ -279,7 +280,7 @@ export default function AIComputationalChemistryPage() {
                     };
                   
                     // API에 먼저 저장
-                    const response = await fetch("/api/content", {
+                    const response = await fetch(`${getApiBase()}/api/content`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ aiComputationalChemistry: JSON.stringify(updatedData) }),

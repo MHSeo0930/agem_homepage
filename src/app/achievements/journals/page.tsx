@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 import { publications as initialPublications } from "@/data/publications";
 
@@ -168,7 +169,7 @@ export default function JournalsPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.journalPublications) {
         try {
@@ -238,7 +239,7 @@ export default function JournalsPage() {
     if (authenticated) {
       const loadExcelData = async () => {
         try {
-          const response = await fetch("/api/excel");
+          const response = await fetch(`${getApiBase()}/api/excel`);
           const result = await response.json();
           if (result.success) {
             setExcelData(result.data || []);
@@ -274,7 +275,7 @@ export default function JournalsPage() {
     });
     setPublications(updatedPublications);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
@@ -308,7 +309,7 @@ export default function JournalsPage() {
     const updatedPublications = [newPublication, ...publications].sort((a, b) => b.number - a.number);
     setPublications(updatedPublications);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
@@ -331,7 +332,7 @@ export default function JournalsPage() {
     const updatedPublications = publications.filter((pub) => pub.number !== pubNumber);
     setPublications(updatedPublications);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
@@ -383,7 +384,7 @@ export default function JournalsPage() {
                       };
                       
                       // API에 먼저 저장
-                      const response = await fetch("/api/content", {
+                      const response = await fetch(`${getApiBase()}/api/content`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ journalsPage: JSON.stringify(updatedData) }),
@@ -501,7 +502,7 @@ export default function JournalsPage() {
                     };
                   
                     // API에 먼저 저장
-                    const response = await fetch("/api/content", {
+                    const response = await fetch(`${getApiBase()}/api/content`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ journalsPage: JSON.stringify(updatedData) }),
@@ -552,7 +553,7 @@ export default function JournalsPage() {
                       }
                       
                       try {
-                        const response = await fetch("/api/excel", {
+                        const response = await fetch(`${getApiBase()}/api/excel`, {
                           method: "DELETE",
                         });
                         
@@ -560,7 +561,7 @@ export default function JournalsPage() {
                         if (result.success) {
                           alert(result.message || "엑셀 데이터가 초기화되었습니다.");
                           // 엑셀 데이터 다시 로드
-                          const excelRes = await fetch("/api/excel");
+                          const excelRes = await fetch(`${getApiBase()}/api/excel`);
                           const excelData = await excelRes.json();
                           if (excelData.success) {
                             setExcelData(excelData.data || []);
@@ -596,7 +597,7 @@ export default function JournalsPage() {
                         formData.append("file", file);
                         
                         try {
-                          const response = await fetch("/api/excel", {
+                          const response = await fetch(`${getApiBase()}/api/excel`, {
                             method: "PUT",
                             body: formData,
                           });
@@ -605,7 +606,7 @@ export default function JournalsPage() {
                           if (result.success) {
                             alert(result.message || "엑셀 파일이 업로드되었고, 기존 데이터가 새 데이터로 교체되었습니다.");
                             // 엑셀 데이터 다시 로드
-                            const excelRes = await fetch("/api/excel");
+                            const excelRes = await fetch(`${getApiBase()}/api/excel`);
                             const excelData = await excelRes.json();
                             if (excelData.success) {
                               setExcelData(excelData.data || []);
@@ -628,7 +629,7 @@ export default function JournalsPage() {
                     onClick={async () => {
                       try {
                         // API에서 직접 파일 다운로드
-                        const response = await fetch("/api/excel?download=true");
+                        const response = await fetch(`${getApiBase()}/api/excel?download=true`);
                         
                         if (!response.ok) {
                           const errorData = await response.json().catch(() => ({ error: "다운로드 실패" }));
@@ -662,7 +663,7 @@ export default function JournalsPage() {
                 onDataChange={setExcelData}
                 onSave={async (data) => {
                   try {
-                    const response = await fetch("/api/excel", {
+                    const response = await fetch(`${getApiBase()}/api/excel`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ data, updatePublications: true }),

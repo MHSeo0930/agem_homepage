@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
 import Image from "next/image";
@@ -171,7 +172,7 @@ export default function GalleryPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.gallery) {
         try {
@@ -217,7 +218,7 @@ export default function GalleryPage() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setGalleryItems(updatedGallery);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
@@ -251,7 +252,7 @@ export default function GalleryPage() {
     const updatedGallery = [newGallery, ...galleryItems].sort((a, b) => b.number - a.number);
     setGalleryItems(updatedGallery);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
@@ -268,7 +269,7 @@ export default function GalleryPage() {
     const updatedGallery = galleryItems.filter((item) => item.id !== galleryId);
     setGalleryItems(updatedGallery);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),

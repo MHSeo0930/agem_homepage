@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 
 interface NewsItem {
@@ -287,7 +288,7 @@ export default function NewsPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.news) {
         try {
@@ -314,7 +315,7 @@ export default function NewsPage() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setNewsItems(updatedNews);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
@@ -348,7 +349,7 @@ export default function NewsPage() {
     const updatedNews = [newNews, ...newsItems].sort((a, b) => b.number - a.number);
     setNewsItems(updatedNews);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
@@ -365,7 +366,7 @@ export default function NewsPage() {
     const updatedNews = newsItems.filter((item) => item.id !== newsId);
     setNewsItems(updatedNews);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),

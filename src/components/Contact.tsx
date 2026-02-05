@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function Contact() {
   const { authenticated } = useAuth();
@@ -35,7 +36,7 @@ export default function Contact() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.contact) {
         try {
@@ -60,7 +61,7 @@ export default function Contact() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setContactData(updatedData);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contact: JSON.stringify(updatedData) }),

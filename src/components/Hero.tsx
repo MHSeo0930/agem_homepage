@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function Hero() {
   const { authenticated } = useAuth();
@@ -10,7 +11,7 @@ export default function Hero() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.hero) setLabName(data.hero);
     } catch (error) {
@@ -29,7 +30,7 @@ export default function Hero() {
       setLabName(content);
     }
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [key]: content }),

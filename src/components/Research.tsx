@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function Research() {
   const { authenticated } = useAuth();
@@ -33,7 +34,7 @@ export default function Research() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.research) {
         try {
@@ -58,7 +59,7 @@ export default function Research() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ research: JSON.stringify(updatedData) }),
@@ -84,7 +85,7 @@ export default function Research() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ research: JSON.stringify(updatedData) }),

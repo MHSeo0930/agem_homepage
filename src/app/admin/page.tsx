@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -11,7 +12,7 @@ export default function AdminPage() {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("/api/auth/check");
+      const response = await fetch(`${getApiBase()}/api/auth/check`);
       const data = await response.json();
       if (!data.authenticated) {
         router.push("/admin/login");
@@ -31,7 +32,7 @@ export default function AdminPage() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(`${getApiBase()}/api/auth/logout`, { method: "POST" });
     router.push("/admin/login");
     router.refresh();
   };

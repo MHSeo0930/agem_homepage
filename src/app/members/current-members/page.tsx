@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
 
@@ -145,7 +146,7 @@ export default function CurrentMembersPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       if (data.members) {
         try {
@@ -172,7 +173,7 @@ export default function CurrentMembersPage() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setMembers(updatedMembers);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
@@ -211,7 +212,7 @@ export default function CurrentMembersPage() {
     const updatedMembers = [...members, newMember];
     setMembers(updatedMembers);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
@@ -228,7 +229,7 @@ export default function CurrentMembersPage() {
     const updatedMembers = members.filter((member) => member.id !== memberId);
     setMembers(updatedMembers);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),

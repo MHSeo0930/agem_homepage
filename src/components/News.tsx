@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiBase } from "@/lib/apiBase";
 
 interface NewsItem {
   id: string;
@@ -66,7 +67,7 @@ export default function News() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
       
       // newsData 로드 (제목, 설명 등)
@@ -136,7 +137,7 @@ export default function News() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setNewsData(updatedData);
     
-    const response = await fetch("/api/content", {
+    const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ news: JSON.stringify(updatedData) }),
@@ -217,7 +218,7 @@ export default function News() {
                 };
                 
                 // API에 먼저 저장
-                const response = await fetch("/api/content", {
+                const response = await fetch(`${getApiBase()}/api/content`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
@@ -268,7 +269,7 @@ export default function News() {
               };
               
               // API에 먼저 저장
-              const response = await fetch("/api/content", {
+              const response = await fetch(`${getApiBase()}/api/content`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
