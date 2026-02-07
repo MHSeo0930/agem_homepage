@@ -239,12 +239,11 @@ export default function GalleryPage() {
       const msg = (errBody as { error?: string }).error || response.statusText;
       throw new Error(`저장 실패 (${response.status}): ${msg}`);
     }
-    
-    const delay = field === "image" ? 400 : 50;
-    const refetchAfterSave = field === "image";
+    // 이미지 저장 후에는 loadData() 호출 안 함 → 방금 반영한 상태가 서버 응답으로 덮어쓰이지 않도록 (NAS 등에서 즉시 반영)
+    if (field === "image") return;
     setTimeout(async () => {
-      await loadData(refetchAfterSave);
-    }, delay);
+      await loadData(false);
+    }, 50);
   };
 
   const handleImageSave = async (galleryId: string, imageUrl: string) => {

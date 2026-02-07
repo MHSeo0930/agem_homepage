@@ -175,14 +175,13 @@ export default function ProfessorPage() {
       body: JSON.stringify({ professor: JSON.stringify(updatedData) }),
     });
     if (!response.ok) {
-      // 이미지인 경우 되돌리지 않음 → 화면에는 올린 사진이 계속 보이도록 (실시간 반영)
       if (field !== "image") setProfessorData(professorData);
       throw new Error("Failed to save");
     }
-    const delay = field === "image" ? 400 : 50;
+    if (field === "image") return;
     setTimeout(async () => {
-      await loadData(field === "image");
-    }, delay);
+      await loadData(false);
+    }, 50);
   };
 
   const handleImageSave = async (imageUrl: string) => {
