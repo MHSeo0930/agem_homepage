@@ -9,7 +9,7 @@
     "lint": "next lint",
     "backup:vercel": "node scripts/backup-from-vercel.js",
     "push:content": "bash scripts/push-content.sh",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/00_deploy.sh"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -11,15 +11,28 @@ echo "  [2] 배포      — 빌드 후 Git 푸시 → GitHub Pages 자동 배포
 echo ""
 read -p "선택 (1 또는 2): " choice
 
-case "$choice" in
-  1)
-    echo ""
-    echo "[로컬 빌드]"
+# 3000 포트 사용 프로세스 종료 (Mac: lsof, NAS/리눅스: fuser 등)
+kill_port_3000() {
+  if command -v lsof >/dev/null 2>&1; then
     if lsof -ti :3000 >/dev/null 2>&1; then
       echo "기존 3000 포트 프로세스 종료 중..."
       kill $(lsof -ti :3000) 2>/dev/null || true
       sleep 1
     fi
+  elif command -v fuser >/dev/null 2>&1; then
+    if fuser 3000/tcp >/dev/null 2>&1; then
+      echo "기존 3000 포트 프로세스 종료 중..."
+      fuser -k 3000/tcp 2>/dev/null || true
+      sleep 1
+    fi
+  fi
+}
+
+case "$choice" in
+  1)
+    echo ""
+    echo "[로컬 빌드]"
+    kill_port_3000
     echo "[1/2] 빌드 중..."
     npm run build
     echo "[2/2] 서버 시작 (종료: Ctrl+C)"
