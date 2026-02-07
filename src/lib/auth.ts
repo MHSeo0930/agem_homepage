@@ -15,11 +15,12 @@ export async function isAuthenticated(): Promise<boolean> {
 
 export async function setSession() {
   const cookieStore = await cookies();
+  // NAS 등 http 로컬에서는 secure: false (브라우저가 http에서 Secure 쿠키를 안 보냄)
   cookieStore.set('admin_session', 'authenticated', {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 7, // 7 days
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.VERCEL === '1',
   });
 }
 

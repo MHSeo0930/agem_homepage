@@ -20,11 +20,12 @@ export async function POST(request: NextRequest) {
     
     if (isValid) {
       const cookieStore = await cookies();
+      // NAS 등 http 로컬에서는 secure: false (Vercel에서만 HTTPS이므로 Secure 쿠키 사용)
       cookieStore.set('admin_session', 'authenticated', {
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 7, // 7 days
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.VERCEL === '1',
         path: '/',
       });
       return NextResponse.json({ success: true });
