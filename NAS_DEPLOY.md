@@ -204,6 +204,33 @@ npm run dev
 - **콘텐츠만 반영**: `./scripts/push-content.sh` (다른 터미널 탭에서 실행하거나, 서버를 Ctrl+C로 멈춘 뒤 실행)
 - **전체 배포**: `./scripts/00_deploy.sh` → **2** 입력 (역시 서버 중지 후 실행하거나 새 SSH 세션에서)
 
+### 4) NAS에서 올린 사진을 Vercel에 반영하기
+
+Vercel은 **Git에 올라간 파일만** 빌드에 포함합니다. NAS에서 사진을 업로드했다면, **반드시** 아래 중 하나를 실행해 **data/content.json**과 **public/uploads/** 를 함께 푸시해야 Vercel에서 이미지가 보입니다.
+
+**방법 A (권장): 콘텐츠·업로드만 푸시**
+
+```bash
+cd /var/services/homes/Share/Homepage
+./scripts/push-content.sh "NAS 업로드 이미지 반영"
+```
+
+**방법 B: 전체 배포**
+
+```bash
+cd /var/services/homes/Share/Homepage
+./scripts/00_deploy.sh
+# → 2 입력
+```
+
+**푸시 전 확인 (선택):**
+
+```bash
+git status data/content.json public/uploads/
+```
+
+- `data/content.json`과 `public/uploads/` 아래 새 파일이 **추가/수정**으로 나와 있어야 합니다. 없으면 NAS에서 이미지 저장 후 다시 시도하세요.
+
 **참고**: NAS 방화벽에서 **3000 포트**가 허용되어 있어야 외부(같은 네트워크)에서 접속됩니다. DSM → 제어판 → 보안 → 방화벽에서 3000 포트 규칙 추가.
 
 ---
@@ -276,6 +303,12 @@ cd /var/services/homes/Share/Homepage
 
 - **`Permission denied` (공유 폴더)**  
   `chown`으로 프로젝트 폴더 소유자를 SSH 로그인 사용자로 바꾸거나, 해당 사용자로 `git clone`/작업.
+
+- **사진 업로드 후 반영 안 됨**  
+  이미지는 `public/uploads/`에 저장되고, 편집 내용은 `data/content.json`에 저장됩니다. 두 경로 모두 **쓰기 권한**이 있어야 합니다. `chmod -R u+w /var/services/homes/Share/Homepage/data /var/services/homes/Share/Homepage/public/uploads` 로 권한 확인. 저장 실패 시 브라우저에 "저장에 실패했습니다" 알림이 뜹니다.
+
+- **NAS에서 올린 사진이 Vercel에서 안 보임**  
+  Vercel은 **Git 저장소에 있는 파일만** 배포합니다. NAS에서 사진을 올린 뒤 **반드시** `data/content.json`과 `public/uploads/` 안의 **새 이미지 파일**을 함께 커밋·푸시해야 합니다. 아래 "NAS → Vercel 사진 반영" 절차를 따르세요.
 
 - **푸시 시 인증 실패**  
   HTTPS면 Personal Access Token 사용. SSH면 `ssh -T git@github.com`로 연결 확인 후 `git push` 재시도.

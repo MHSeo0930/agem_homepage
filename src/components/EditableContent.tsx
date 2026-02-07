@@ -193,7 +193,11 @@ export default function EditableContent({
         if (data.success && quillInstanceRef.current) {
           const quill = quillInstanceRef.current;
           const range = quill.getSelection();
-          const url = data.url.startsWith("http") ? data.url : getApiBase() + data.url;
+          const url = data.url.startsWith("http")
+            ? data.url
+            : data.url.startsWith("/")
+              ? data.url
+              : getApiBase() + data.url;
           quill.insertEmbed(range?.index || 0, "image", url);
         }
       } catch (error) {

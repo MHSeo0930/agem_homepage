@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 로컬: public/uploads
+    // 로컬/NAS: public/uploads (basePath 포함 경로 반환 → 화면/저장 시 동일 경로 사용)
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
@@ -56,9 +56,12 @@ export async function POST(request: NextRequest) {
     const filepath = path.join(uploadsDir, filename);
     await writeFile(filepath, buffer);
 
+    const basePath = process.env.NEXT_PUBLIC_BASEPATH || '/agem_homepage';
+    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${filename}`;
+
     return NextResponse.json({
       success: true,
-      url: `/uploads/${filename}`,
+      url: urlPath,
     });
   } catch (error) {
     console.error('Upload error:', error);

@@ -56,9 +56,21 @@ export default function EditableImage({
 
       const data = await response.json();
       if (data.success) {
-        const url = data.url.startsWith("http") ? data.url : getApiBase() + data.url;
+        const url = data.url.startsWith("http")
+          ? data.url
+          : data.url.startsWith("/")
+            ? data.url
+            : getApiBase() + data.url;
         setImageSrc(url);
-        await onSave(url);
+        try {
+          await onSave(url);
+        } catch (saveErr) {
+          console.error("Save image URL error:", saveErr);
+          setImageSrc(src);
+          alert("이미지는 업로드됐지만 저장에 실패했습니다. NAS에서 data/ 폴더 쓰기 권한을 확인하세요.");
+        }
+      } else {
+        alert(data.error || "Failed to upload image");
       }
     } catch (error) {
       console.error("Upload error:", error);
