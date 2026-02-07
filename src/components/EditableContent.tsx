@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { getApiBase } from "@/lib/apiBase";
+import { registerQuillFontSize } from "@/lib/registerQuillFontSize";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
@@ -37,14 +38,21 @@ export default function EditableContent({
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [quillKey, setQuillKey] = useState(0);
+  const [quillReady, setQuillReady] = useState(false);
   const quillRef = useRef<any>(null);
   const quillInstanceRef = useRef<any>(null);
+  const fontSizeInputRef = useRef<HTMLInputElement>(null);
 
   // defaultValue 변경 추적을 위한 ref
   const prevDefaultValueRef = useRef<string>(defaultValue);
   const isInitialMountRef = useRef<boolean>(true);
   const justSavedRef = useRef<boolean>(false); // 저장 직후인지 추적
-  
+
+  // Quill 글자 크기(숫자 px) 포맷 등록 — 한 번만 실행
+  useEffect(() => {
+    registerQuillFontSize().then(() => setQuillReady(true));
+  }, []);
+
   // HTML 정규화 함수 (비교를 위해)
   const normalizeHTML = (html: string): string => {
     if (!html) return '';
@@ -211,6 +219,17 @@ export default function EditableContent({
     },
   };
 
+  const applyFontSize = () => {
+    const quill = quillInstanceRef.current;
+    const input = fontSizeInputRef.current;
+    if (!quill || !input) return;
+    const num = parseInt(input.value, 10);
+    if (!isNaN(num) && num >= 8 && num <= 200) {
+      quill.format("size", `${num}px`);
+      quill.focus();
+    }
+  };
+
   // ReactQuill이 마운트된 후 content 설정 및 quillInstanceRef 업데이트
   // clipboard.convert + setContents 사용 시 h1/h2/h3 등 블록 서식이 Quill Delta에 정확히 반영됨
   useEffect(() => {
@@ -318,19 +337,44 @@ export default function EditableContent({
               display: block;
             }
           `}</style>
-          <div ref={quillRef} className="quill-wrapper">
-            <ReactQuill
-              key={`quill-${contentKey}-${quillKey}`}
-              theme="snow"
-              defaultValue={sanitizeHTML(displayContent || defaultValue)}
-              onChange={() => {
-                // onChange는 사용하지 않고, 저장 시에만 ref를 통해 가져옴
-              }}
-              modules={modules}
-              className="bg-white"
-              placeholder="내용을 입력하세요..."
-            />
-          </div>
+          {!quillReady ? (
+            <div className="min-h-[150px] flex items-center justify-center text-gray-500">로딩 중...</div>
+          ) : (
+            <>
+              <div ref={quillRef} className="quill-wrapper">
+                <ReactQuill
+                  key={`quill-${contentKey}-${quillKey}`}
+                  theme="snow"
+                  defaultValue={sanitizeHTML(displayContent || defaultValue)}
+                  onChange={() => {
+                    // onChange는 사용하지 않고, 저장 시에만 ref를 통해 가져옴
+                  }}
+                  modules={modules}
+                  className="bg-white"
+                  placeholder="내용을 입력하세요..."
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-2 py-2 border-t border-gray-200">
+                <label className="text-sm text-gray-600 whitespace-nowrap">글자 크기(px):</label>
+                <input
+                  ref={fontSizeInputRef}
+                  type="number"
+                  min={8}
+                  max={200}
+                  defaultValue={14}
+                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
+                  onKeyDown={(e) => e.key === "Enter" && applyFontSize()}
+                />
+                <button
+                  type="button"
+                  onClick={applyFontSize}
+                  className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  적용
+                </button>
+              </div>
+            </>
+          )}
           <div className="flex gap-2 mt-3 justify-end border-t pt-2">
             <button
               onClick={handleSave}

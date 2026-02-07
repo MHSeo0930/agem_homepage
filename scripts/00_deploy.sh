@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# 1: 로컬 빌드 → 확인 후  2: 배포(푸시)
+# 사용법: ./scripts/00_deploy.sh
+
+set -e
+cd "$(dirname "$0")/.."
+
+echo ""
+echo "  [1] 로컬 빌드  — 빌드만 수행 (로컬에서 확인용)"
+echo "  [2] 배포      — 빌드 후 Git 푸시 → GitHub Pages 자동 배포"
+echo ""
+read -p "선택 (1 또는 2): " choice
+
+case "$choice" in
+  1)
+    echo ""
+    echo "[로컬 빌드]"
+    if lsof -ti :3000 >/dev/null 2>&1; then
+      echo "기존 3000 포트 프로세스 종료 중..."
+      kill $(lsof -ti :3000) 2>/dev/null || true
+      sleep 1
+    fi
+    echo "[1/2] 빌드 중..."
+    npm run build
+    echo "[2/2] 서버 시작 (종료: Ctrl+C)"
+    npm run start
+    ;;
+  2)
+    echo ""
+    echo "[배포]"
+    echo "[1/4] 빌드 중..."
+    npm run build
+
+    MSG="${1:-Deploy $(date +%Y-%m-%d\ %H:%M)}"
+    echo "[2/4] 전체 변경사항 스테이징..."
+    git add .
+
+    echo "[3/4] 커밋: $MSG"
+    if git diff --staged --quiet 2>/dev/null; then
+      echo "변경된 파일이 없습니다. (이미 모두 커밋된 상태)"
+      exit 0
+    fi
+    git commit -m "$MSG"
+
+    echo "[4/4] 푸시 (origin main)..."
+    git push origin main
+
+    echo ""
+    echo "배포 요청 완료. GitHub Pages가 자동으로 배포합니다 (1~2분 소요)."
+    echo "  커밋: $(git log -1 --oneline)"
+    ;;
+  *)
+    echo "1 또는 2를 입력하세요."
+    exit 1
+    ;;
+esac

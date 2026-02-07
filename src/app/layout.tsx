@@ -19,7 +19,7 @@ export default function RootLayout({
       <body className="antialiased">
         <Providers>
           <Header />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen bg-[#f8f9fa]">{children}</main>
           <Footer />
         </Providers>
       </body>
