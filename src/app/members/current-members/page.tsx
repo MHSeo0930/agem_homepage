@@ -190,10 +190,10 @@ export default function CurrentMembersPage() {
       if (field !== "image") setMembers(members);
       throw new Error("Failed to save");
     }
-    if (field === "image") return;
+    const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
       await loadData();
-    }, 50);
+    }, delay);
   };
 
   const handleImageSave = async (memberId: string, imageUrl: string) => {

@@ -117,10 +117,10 @@ export default function AlumniPage() {
       if (field !== "image") setAlumni(alumni);
       throw new Error("Failed to save");
     }
-    if (field === "image") return;
+    const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
       await loadData();
-    }, 50);
+    }, delay);
   };
 
   const handleImageSave = async (alumnusId: string, imageUrl: string) => {

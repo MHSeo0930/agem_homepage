@@ -239,12 +239,11 @@ export default function GalleryPage() {
       throw new Error(`저장 실패 (${response.status}): ${msg}`);
     }
     
-    // 이미지 저장 후에는 loadData() 생략 → 방금 반영한 상태가 덮어쓰이지 않음 (NAS 등에서 즉시 반영)
-    if (field === "image") return;
-    // 제목 등 다른 필드는 저장 후 서버와 동기화
+    // 이미지 저장 후에도 잠시 뒤 서버에서 다시 불러와 반영 (재시작 없이 화면 갱신)
+    const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
       await loadData();
-    }, 50);
+    }, delay);
   };
 
   const handleImageSave = async (galleryId: string, imageUrl: string) => {

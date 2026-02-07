@@ -178,10 +178,11 @@ export default function ProfessorPage() {
       if (field !== "image") setProfessorData(professorData);
       throw new Error("Failed to save");
     }
-    if (field === "image") return;
+    // 이미지 저장 후에도 잠시 뒤 서버에서 다시 불러와 반영
+    const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
       await loadData();
-    }, 50);
+    }, delay);
   };
 
   const handleImageSave = async (imageUrl: string) => {
