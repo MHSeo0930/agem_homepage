@@ -36,6 +36,17 @@ case "$choice" in
     echo "[1/2] 빌드 중..."
     npm run build
     echo "[2/2] 서버 시작 (종료: Ctrl+C)"
+    # 로컬 접속 주소 안내 (NAS: IP로 접속, 맥: localhost)
+    _ip=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
+    if [ -z "$_ip" ]; then
+      _ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || true)
+    fi
+    echo ""
+    echo "  로컬 접속: http://localhost:3000/agem_homepage"
+    if [ -n "$_ip" ]; then
+      echo "  같은 네트워크: http://${_ip}:3000/agem_homepage"
+    fi
+    echo ""
     npm run start
     ;;
   2)
