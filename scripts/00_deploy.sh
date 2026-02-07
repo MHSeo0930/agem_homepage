@@ -41,11 +41,18 @@ case "$choice" in
     if [ -z "$_ip" ]; then
       _ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || true)
     fi
+    if [ -z "$_ip" ]; then
+      _ip=$(ip -4 addr show 2>/dev/null | grep -oP 'inet \K[\d.]+' | grep -v '^127\.' | head -1 || true)
+    fi
     echo ""
-    echo "  로컬 접속: http://localhost:3000/agem_homepage"
+    echo "  === 로컬 접속 주소 (basePath: /agem_homepage) ==="
+    echo "  이 PC에서:     http://localhost:3000/agem_homepage"
     if [ -n "$_ip" ]; then
       echo "  같은 네트워크: http://${_ip}:3000/agem_homepage"
+    else
+      echo "  같은 네트워크: http://<이_PC_IP>:3000/agem_homepage  (NAS면 10.146.146.234 등)"
     fi
+    echo "  ================================================"
     echo ""
     npm run start
     ;;
