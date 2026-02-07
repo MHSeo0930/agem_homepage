@@ -17,6 +17,23 @@
 
 ---
 
+## 업로드 사진이 Git + NAS + Vercel 모두에 반영되려면
+
+| 단계 | 설명 |
+|------|------|
+| 1. 업로드 | NAS 또는 맥에서 사이트 접속 후 사진 업로드·저장 → `public/uploads/`에 파일 생성, `data/content.json` 수정 |
+| 2. Git에 올리기 | **반드시** 아래 중 하나를 실행해 **data/content.json**과 **public/uploads/** 를 함께 커밋·푸시해야 함 |
+| 3. 반영 | **Git** 저장소에 반영됨 → **Vercel**은 푸시 시 자동 재배포(1~2분) → **NAS**는 다른 쪽에서 푸시했으면 `git pull` 로 동기화 |
+
+**사진 올린 뒤 꼭 실행할 것 (NAS 또는 맥):**
+
+- **콘텐츠·업로드만 푸시**: `./scripts/push-content.sh "업로드 이미지 반영"`
+- **전체 배포**: `./scripts/00_deploy.sh` → **2** 입력
+
+※ `public/uploads/`는 .gitignore에 없으므로 커밋·푸시하면 Git/Vercel/NAS 모두에서 동일한 파일을 쓰게 됩니다.
+
+---
+
 ## 1. NAS에서 SSH 활성화
 
 1. DSM에 로그인 → **제어판** → **터미널 및 SNMP**

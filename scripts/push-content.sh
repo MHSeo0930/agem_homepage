@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 로컬에서 편집한 콘텐츠·엑셀·업로드 이미지를 커밋하고 푸시합니다.
+# 로컬/NAS에서 편집한 콘텐츠·엑셀·업로드 이미지를 Git에 올려 NAS·Vercel 모두 반영합니다.
 
 set -e
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
@@ -8,8 +8,8 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
   echo "  npm run push:content -- \"메인 문구 수정\"  # 커밋 메시지 지정"
   echo "  ./scripts/push-content.sh [커밋 메시지]"
   echo ""
-  echo "  data/content.json, data/journals.xlsx, public/uploads/ 만 스테이징 후"
-  echo "  커밋·푸시하여 Vercel이 자동으로 다시 배포합니다."
+  echo "  data/content.json, data/journals.xlsx, public/uploads/ 를 스테이징 후"
+  echo "  커밋·푸시 → Git에 반영되고, Vercel은 자동 재배포, NAS는 git pull 로 동기화."
   exit 0
 fi
 
@@ -44,6 +44,7 @@ echo "[4/4] 푸시 (origin main)..."
 git push origin main
 
 echo ""
-echo "푸시 완료. 배포 확인:"
+echo "푸시 완료. 업로드 사진·콘텐츠가 Git + Vercel에 반영됩니다."
 echo "  - Git: $(git log -1 --oneline)"
-echo "  - Vercel은 보통 1~2분 내 자동 배포됩니다. Deployments 탭에서 새 배포가 뜨는지 확인하세요."
+echo "  - Vercel: 1~2분 내 자동 재배포 (Deployments 탭 확인)"
+echo "  - NAS: 다른 쪽에서 푸시했으면 이 기기에서 'git pull' 로 동기화"

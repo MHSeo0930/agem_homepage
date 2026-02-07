@@ -45,6 +45,8 @@ next-env.d.ts
 # data/*.xlsx
 !data/.gitkeep
 
+# public/uploads: 업로드 사진은 Git에 포함해 NAS·Vercel 모두 반영 (이 디렉터리는 무시하지 않음)
+
 # local backups (optional: remove this block if you want to track backups)
 backup_*/
 

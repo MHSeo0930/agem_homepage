@@ -77,11 +77,10 @@ case "$choice" in
     git push origin main
 
     echo ""
-    echo "배포 요청 완료. GitHub Pages / Vercel이 자동으로 배포합니다 (1~2분 소요)."
+    echo "배포 요청 완료. Git + GitHub Pages + Vercel에 반영됩니다 (Vercel 1~2분 소요)."
     echo "  커밋: $(git log -1 --oneline)"
-    echo ""
-    echo "  NAS에서 사진을 올렸다면 이 푸시에 data/content.json, public/uploads/ 가 포함되어"
-    echo "  있어야 Vercel에서 이미지가 보입니다. 콘텐츠만 푸시하려면: ./scripts/push-content.sh"
+    echo "  업로드 사진이 포함돼 있으면 public/uploads/ 도 푸시됨 → NAS·Vercel 모두 반영."
+    echo "  콘텐츠·사진만 푸시할 때: ./scripts/push-content.sh"
     ;;
   *)
     echo "1 또는 2를 입력하세요."

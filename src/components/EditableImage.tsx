@@ -84,11 +84,14 @@ export default function EditableImage({
     setImageError(true);
   };
 
-  // 갤러리 이미지인지 확인 (gallery 경로 포함 시)
+  // 갤러리/멤버/업로드 이미지 구분 (basePath 포함 경로 포함)
   const isGalleryImage = imageSrc && imageSrc.includes("/images/gallery/");
   const isMemberImage = imageSrc && (imageSrc.includes("/images/members/") || imageSrc.includes("/images/alumni/"));
+  const isUploadImage = imageSrc && (imageSrc.includes("/uploads/") || imageSrc.includes("/agem_homepage/uploads/"));
   const isPngImage = imageSrc && imageSrc.toLowerCase().endsWith('.png');
   const showPlaceholder = !imageSrc || imageSrc === "" || imageError || (isMemberImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i)) || (isGalleryImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  // 브라우저에서 상대 경로를 절대 URL로 (basePath/다른 도메인에서 로드 안 되는 경우 방지)
+  const displaySrc = typeof window !== "undefined" && imageSrc && imageSrc.startsWith("/") ? window.location.origin + imageSrc : imageSrc;
 
   if (!isAuthenticated) {
     return (
@@ -99,7 +102,7 @@ export default function EditableImage({
           </div>
         ) : isPngImage && isMemberImage ? (
           <img
-            src={imageSrc}
+            src={displaySrc}
             alt={alt}
             className={className}
             onError={handleImageError}
@@ -107,26 +110,26 @@ export default function EditableImage({
           />
         ) : fill ? (
           <Image
-            src={imageSrc}
+            src={displaySrc}
             alt={alt}
             fill
             sizes={sizes}
             className={className}
             onError={handleImageError}
             onLoad={() => setImageLoaded(true)}
-            unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+            unoptimized={isMemberImage || isUploadImage}
             priority={imageSrc.includes("/images/alumni/")}
           />
         ) : (
           <Image
-            src={imageSrc}
+            src={displaySrc}
             alt={alt}
             width={isMemberImage ? 200 : 500}
             height={isMemberImage ? 200 : 500}
             className={className}
             onError={handleImageError}
             onLoad={() => setImageLoaded(true)}
-            unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+            unoptimized={isMemberImage || isUploadImage}
             priority={imageSrc.includes("/images/alumni/")}
           />
         )}
@@ -144,7 +147,7 @@ export default function EditableImage({
       ) : isPngImage && isMemberImage ? (
         fill ? (
           <img
-            src={imageSrc}
+            src={displaySrc}
             alt={alt}
             className={`${className} w-full h-full`}
             onError={handleImageError}
@@ -153,7 +156,7 @@ export default function EditableImage({
           />
         ) : (
           <img
-            src={imageSrc}
+            src={displaySrc}
             alt={alt}
             className={className}
             onError={handleImageError}
@@ -162,26 +165,26 @@ export default function EditableImage({
         )
       ) : fill ? (
         <Image
-          src={imageSrc}
+          src={displaySrc}
           alt={alt}
           fill
           sizes={sizes}
           className={className}
           onError={handleImageError}
           onLoad={() => setImageLoaded(true)}
-          unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+          unoptimized={isMemberImage || isUploadImage}
           priority={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/professor")}
         />
       ) : (
         <Image
-          src={imageSrc}
+          src={displaySrc}
           alt={alt}
           width={isMemberImage ? 200 : 500}
           height={isMemberImage ? 200 : 500}
           className={className}
           onError={handleImageError}
           onLoad={() => setImageLoaded(true)}
-          unoptimized={imageSrc.includes("/images/alumni/") || imageSrc.includes("/images/members/")}
+          unoptimized={isMemberImage || isUploadImage}
           priority={imageSrc.includes("/images/alumni/")}
         />
       )}
