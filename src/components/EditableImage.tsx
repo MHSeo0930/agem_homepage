@@ -50,13 +50,15 @@ export default function EditableImage({
     try {
       const response = await fetch(`${getApiBase()}/api/upload`, {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
 
       const data = await response.json();
       if (data.success) {
-        setImageSrc(data.url);
-        await onSave(data.url);
+        const url = data.url.startsWith("http") ? data.url : getApiBase() + data.url;
+        setImageSrc(url);
+        await onSave(url);
       }
     } catch (error) {
       console.error("Upload error:", error);

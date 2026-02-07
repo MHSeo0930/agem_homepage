@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { isAuthenticated } from '@/lib/auth';
+import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,18 +22,27 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const timestamp = Date.now();
+    const filename = `${timestamp}-${file.name}`;
 
-    // Create uploads directory if it doesn't exist
+    // Vercel: Blob 사용 시 영구 저장
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`uploads/${filename}`, buffer, {
+        access: 'public',
+        addRandomSuffix: false,
+      });
+      return NextResponse.json({
+        success: true,
+        url: blob.url,
+      });
+    }
+
+    // 로컬: public/uploads
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `${timestamp}-${file.name}`;
     const filepath = path.join(uploadsDir, filename);
-
     await writeFile(filepath, buffer);
 
     return NextResponse.json({
@@ -47,4 +57,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

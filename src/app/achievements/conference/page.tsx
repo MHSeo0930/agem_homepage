@@ -267,6 +267,7 @@ export default function ConferencePage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to save");
@@ -299,6 +300,7 @@ export default function ConferencePage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to add conference");
@@ -322,6 +324,7 @@ export default function ConferencePage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ conferences: JSON.stringify(updatedConferences) }),
     });
     if (!response.ok) throw new Error("Failed to delete conference");
@@ -359,8 +362,9 @@ export default function ConferencePage() {
                   
                   const response = await fetch(`${getApiBase()}/api/content`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
+headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
                   });
                   if (!response.ok) {
                     // 실패 시 이전 상태로 복원
@@ -415,6 +419,7 @@ export default function ConferencePage() {
                 const response = await fetch(`${getApiBase()}/api/content`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
+                  credentials: "include",
                   body: JSON.stringify({ conferencePage: JSON.stringify(updatedData) }),
                 });
                 if (!response.ok) {

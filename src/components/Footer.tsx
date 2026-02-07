@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="border-t bg-gray-50">
@@ -24,29 +26,29 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="/members/professor" className="text-gray-600 hover:text-gray-900">
+                <Link href="/members/professor" className="text-gray-600 hover:text-gray-900">
                   Members
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/research/green-energy-materials" className="text-gray-600 hover:text-gray-900">
+                <Link href="/research/green-energy-materials" className="text-gray-600 hover:text-gray-900">
                   Research
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/achievements/journals" className="text-gray-600 hover:text-gray-900">
+                <Link href="/achievements/journals" className="text-gray-600 hover:text-gray-900">
                   Achievements
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/board/news" className="text-gray-600 hover:text-gray-900">
+                <Link href="/board/news" className="text-gray-600 hover:text-gray-900">
                   Board
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/about-lab/map" className="text-gray-600 hover:text-gray-900">
+                <Link href="/about-lab/map" className="text-gray-600 hover:text-gray-900">
                   About Lab
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

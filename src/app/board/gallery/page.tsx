@@ -221,6 +221,7 @@ export default function GalleryPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) {
@@ -255,6 +256,7 @@ export default function GalleryPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) throw new Error("Failed to add gallery");
@@ -272,6 +274,7 @@ export default function GalleryPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) throw new Error("Failed to delete gallery");

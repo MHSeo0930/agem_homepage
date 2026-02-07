@@ -32,7 +32,7 @@ export default function AdminPage() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch(`${getApiBase()}/api/auth/logout`, { method: "POST" });
+    await fetch(`${getApiBase()}/api/auth/logout`, { method: "POST", credentials: "include" });
     router.push("/admin/login");
     router.refresh();
   };

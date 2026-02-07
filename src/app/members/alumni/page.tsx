@@ -103,6 +103,7 @@ export default function AlumniPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) {
@@ -141,6 +142,7 @@ export default function AlumniPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) throw new Error("Failed to add alumni");
@@ -158,6 +160,7 @@ export default function AlumniPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) throw new Error("Failed to delete alumni");

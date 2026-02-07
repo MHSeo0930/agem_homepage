@@ -33,6 +33,7 @@ export default function Hero() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ [key]: content }),
     });
     if (!response.ok) {

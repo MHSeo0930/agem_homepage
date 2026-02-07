@@ -176,6 +176,7 @@ export default function CurrentMembersPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) {
@@ -215,6 +216,7 @@ export default function CurrentMembersPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) throw new Error("Failed to add member");
@@ -232,6 +234,7 @@ export default function CurrentMembersPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) throw new Error("Failed to delete member");

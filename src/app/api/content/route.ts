@@ -1,33 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
 import { isAuthenticated } from '@/lib/auth';
+import { getContent, saveContent } from '@/lib/contentStore';
 
 export const dynamic = 'force-dynamic';
-
-const CONTENT_FILE = path.join(process.cwd(), 'data', 'content.json');
-
-async function ensureDataDir() {
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!existsSync(dataDir)) {
-    await mkdir(dataDir, { recursive: true });
-  }
-}
-
-async function getContent() {
-  await ensureDataDir();
-  if (existsSync(CONTENT_FILE)) {
-    const fileContent = await readFile(CONTENT_FILE, 'utf-8');
-    return JSON.parse(fileContent);
-  }
-  return {};
-}
-
-async function saveContent(content: any) {
-  await ensureDataDir();
-  await writeFile(CONTENT_FILE, JSON.stringify(content, null, 2));
-}
 
 export async function GET() {
   try {
@@ -45,10 +20,10 @@ export async function POST(request: NextRequest) {
     }
 
     const updates = await request.json();
-    const currentContent = await getContent();
+    const currentContent = (await getContent()) as Record<string, unknown>;
     const newContent = { ...currentContent, ...updates };
-    
-    await saveContent(newContent);
+
+    await saveContent(newContent as Record<string, unknown>);
     
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -176,6 +176,7 @@ export default function EditableContent({
       try {
         const response = await fetch(`${getApiBase()}/api/upload`, {
           method: "POST",
+          credentials: "include",
           body: formData,
         });
 
@@ -183,7 +184,8 @@ export default function EditableContent({
         if (data.success && quillInstanceRef.current) {
           const quill = quillInstanceRef.current;
           const range = quill.getSelection();
-          quill.insertEmbed(range?.index || 0, "image", data.url);
+          const url = data.url.startsWith("http") ? data.url : getApiBase() + data.url;
+          quill.insertEmbed(range?.index || 0, "image", url);
         }
       } catch (error) {
         console.error("Upload error:", error);
@@ -209,6 +211,7 @@ export default function EditableContent({
   };
 
   // ReactQuill이 마운트된 후 content 설정 및 quillInstanceRef 업데이트
+  // clipboard.convert + setContents 사용 시 h1/h2/h3 등 블록 서식이 Quill Delta에 정확히 반영됨
   useEffect(() => {
     if (isEditing && quillRef.current) {
       const timer = setTimeout(() => {
@@ -218,12 +221,22 @@ export default function EditableContent({
           if (quill) {
             quillInstanceRef.current = quill;
             const contentToSet = sanitizeHTML(displayContent || defaultValue);
-            const currentContent = quill.root.innerHTML.trim();
             const targetContent = contentToSet.trim();
-            // 현재 content와 다를 때만 설정 (불필요한 업데이트 방지)
-            if (currentContent !== targetContent && targetContent !== '<p><br></p>') {
-              quill.root.innerHTML = contentToSet;
+            if (targetContent === '' || targetContent === '<p><br></p>') return;
+            const currentContent = quill.root.innerHTML.trim();
+            if (currentContent === targetContent) return;
+            try {
+              if (quill.clipboard?.convert) {
+                const delta = quill.clipboard.convert({ html: contentToSet });
+                if (delta && delta.ops && delta.ops.length > 0) {
+                  quill.setContents(delta, 'silent');
+                  return;
+                }
+              }
+            } catch (_) {
+              // convert 실패 시 innerHTML 폴백
             }
+            quill.root.innerHTML = contentToSet;
           }
         }
       }, 150);
@@ -240,7 +253,7 @@ export default function EditableContent({
   if (!isAuthenticated) {
     // 블록 레벨 요소가 있으면 div, 없으면 span 사용
     if (hasBlockElements) {
-      return <div dangerouslySetInnerHTML={{ __html: displayContent }} className="block w-full" />;
+      return <div dangerouslySetInnerHTML={{ __html: displayContent }} className="editable-content-display block w-full" />;
     } else {
       // span만 포함된 경우 인라인으로 표시
       return <span dangerouslySetInnerHTML={{ __html: displayContent }} className="inline" />;
@@ -338,7 +351,7 @@ export default function EditableContent({
         </div>
       ) : (
         <div className={`relative ${hasBlockElements ? 'w-full' : 'inline'}`}>
-          <div dangerouslySetInnerHTML={{ __html: displayContent }} className={hasBlockElements ? '' : 'inline'} />
+          <div dangerouslySetInnerHTML={{ __html: displayContent }} className={hasBlockElements ? 'editable-content-display' : 'inline'} />
           <button
             onClick={() => {
               setQuillKey(prev => prev + 1);

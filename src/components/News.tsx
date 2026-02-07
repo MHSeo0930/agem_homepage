@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
@@ -56,7 +57,14 @@ const defaultNewsItems: NewsItem[] = [
 
 export default function News() {
   const { authenticated } = useAuth();
-  const [newsData, setNewsData] = useState({
+  const [newsData, setNewsData] = useState<{
+    title: string;
+    titleKo: string;
+    description: string;
+    descriptionKo: string;
+    titleHtml?: string;
+    descriptionHtml?: string;
+  }>({
     title: "News & Updates",
     titleKo: "최신 소식",
     description: "Stay updated with the latest news and announcements from our lab.",
@@ -81,14 +89,17 @@ export default function News() {
               const serverTitleKo = parsed.titleKo && parsed.titleKo.trim();
               const serverDescription = parsed.description && parsed.description.trim();
               const serverDescriptionKo = parsed.descriptionKo && parsed.descriptionKo.trim();
+              const serverTitleHtml = parsed.titleHtml && typeof parsed.titleHtml === "string" ? parsed.titleHtml.trim() : undefined;
+              const serverDescriptionHtml = parsed.descriptionHtml && typeof parsed.descriptionHtml === "string" ? parsed.descriptionHtml.trim() : undefined;
               
               return {
                 ...prev,
-                // 서버 값이 빈 문자열이면 현재 상태 유지, 아니면 서버 값 사용
                 title: serverTitle ? serverTitle : prev.title,
                 titleKo: serverTitleKo ? serverTitleKo : prev.titleKo,
                 description: serverDescription ? serverDescription : prev.description,
                 descriptionKo: serverDescriptionKo ? serverDescriptionKo : prev.descriptionKo,
+                titleHtml: serverTitleHtml || prev.titleHtml,
+                descriptionHtml: serverDescriptionHtml || prev.descriptionHtml,
               };
             });
           }
@@ -140,6 +151,7 @@ export default function News() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ news: JSON.stringify(updatedData) }),
     });
     if (!response.ok) {
@@ -181,18 +193,18 @@ export default function News() {
     }
   };
 
-  // defaultValue를 useMemo로 메모이제이션하여 불필요한 재생성 방지
-  const titleDefaultValue = useMemo(() => 
-    `<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${newsData?.title || "News & Updates"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${newsData?.titleKo || "최신 소식"}</span></h2>`,
-    [newsData?.title, newsData?.titleKo]
-  );
+  // 서식 유지: 저장된 HTML이 있으면 사용, 없으면 plain text로 구성
+  const titleDefaultValue = useMemo(() => {
+    if (newsData?.titleHtml && newsData.titleHtml.trim() !== "") return newsData.titleHtml;
+    return `<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${newsData?.title || "News & Updates"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${newsData?.titleKo || "최신 소식"}</span></h2>`;
+  }, [newsData?.title, newsData?.titleKo, newsData?.titleHtml]);
   
   const descriptionDefaultValue = useMemo(() => {
-    // 빈 문자열도 체크하여 기본값 사용 방지
+    if (newsData?.descriptionHtml && newsData.descriptionHtml.trim() !== "") return newsData.descriptionHtml;
     const description = newsData?.description?.trim() || "Stay updated with the latest news and announcements from our lab.";
     const descriptionKo = newsData?.descriptionKo?.trim() || "연구실의 최신 소식과 공지사항을 확인하세요.";
     return `<p class="text-base text-gray-600 max-w-2xl mx-auto">${description}<br /><span class="text-sm text-gray-500">${descriptionKo}</span></p>`;
-  }, [newsData?.description, newsData?.descriptionKo]);
+  }, [newsData?.description, newsData?.descriptionKo, newsData?.descriptionHtml]);
 
   return (
     <section className="py-16 bg-white">
@@ -206,31 +218,23 @@ export default function News() {
               tempDiv.innerHTML = content;
               const titleElement = tempDiv.querySelector("h2");
               const titleKoElement = tempDiv.querySelector("span");
-              if (titleElement) {
-                const titleText = titleElement.childNodes[0]?.textContent || "";
-                const titleKoText = titleKoElement?.textContent || "";
-                
-                // 두 필드를 한 번에 저장
-                const updatedData = { 
-                  ...newsData, 
-                  title: titleText.trim(),
-                  titleKo: titleKoText.trim()
-                };
-                
-                // API에 먼저 저장
-                const response = await fetch(`${getApiBase()}/api/content`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
-                });
-                if (!response.ok) {
-                  throw new Error("Failed to save");
-                }
-                
-                // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
-                // loadData()를 호출하지 않음 - 저장한 데이터를 직접 사용하여 덮어쓰기 방지
-                setNewsData(updatedData);
-              }
+              const titleText = titleElement?.childNodes[0]?.textContent?.trim() ?? newsData.title;
+              const titleKoText = titleKoElement?.textContent?.trim() ?? newsData.titleKo;
+              // HTML 전체 저장(서식 유지) + plain text는 검색/호환용
+              const updatedData = {
+                ...newsData,
+                titleHtml: content,
+                title: titleText,
+                titleKo: titleKoText,
+              };
+              const response = await fetch(`${getApiBase()}/api/content`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
+              });
+              if (!response.ok) throw new Error("Failed to save");
+              setNewsData(updatedData);
             }}
             isAuthenticated={authenticated}
           />
@@ -243,45 +247,31 @@ export default function News() {
               tempDiv.innerHTML = content;
               const pElement = tempDiv.querySelector("p");
               const spanElement = tempDiv.querySelector("span");
-              
-              // p 태그에서 span을 제외한 텍스트 추출
               let descriptionText = "";
               if (pElement) {
                 const pClone = pElement.cloneNode(true) as HTMLElement;
                 const spanInP = pClone.querySelector("span");
-                if (spanInP) {
-                  spanInP.remove();
-                }
-                // <br /> 태그도 제거하고 텍스트만 추출
-                const brTags = pClone.querySelectorAll("br");
-                brTags.forEach(br => br.remove());
-                descriptionText = pClone.textContent || pClone.innerText || "";
+                if (spanInP) spanInP.remove();
+                pClone.querySelectorAll("br").forEach(br => br.remove());
+                descriptionText = (pClone.textContent || pClone.innerText || "").trim();
               }
-              
-              // span 태그의 텍스트 추출
-              const descriptionKoText = spanElement?.textContent || spanElement?.innerText || "";
-              
-              // 두 필드를 한 번에 저장
-              const updatedData = { 
-                ...newsData, 
-                description: descriptionText.trim(),
-                descriptionKo: descriptionKoText.trim()
+              const descriptionKoText = (spanElement?.textContent || spanElement?.innerText || "").trim();
+              // HTML 전체 저장(서식 유지) + plain text는 호환용
+              const updatedData = {
+                ...newsData,
+                descriptionHtml: content,
+                description: descriptionText || newsData.description,
+                descriptionKo: descriptionKoText || newsData.descriptionKo,
               };
-              
-              // API에 먼저 저장
               const response = await fetch(`${getApiBase()}/api/content`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ newsData: JSON.stringify(updatedData) }),
               });
-              if (!response.ok) {
-                throw new Error("Failed to save");
-              }
-              
-              // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
-              // loadData()를 호출하지 않음 - 저장한 데이터를 직접 사용하여 덮어쓰기 방지
+              if (!response.ok) throw new Error("Failed to save");
               setNewsData(updatedData);
-            }}
+              }}
             isAuthenticated={authenticated}
             />
           )}
@@ -327,12 +317,12 @@ export default function News() {
           </div>
         </div>
         <div className="text-center mt-8">
-          <a
+          <Link
             href="/board/news"
             className="inline-block px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors text-sm"
           >
             View All News →
-          </a>
+          </Link>
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { recentPublications, publications } from "@/data/publications";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
@@ -77,6 +78,7 @@ export default function Publications() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ publications: JSON.stringify(updatedData) }),
     });
     if (!response.ok) {
@@ -106,18 +108,20 @@ export default function Publications() {
     (publicationsData.selectedNumbers || []).includes(pub.number)
   );
 
-  // defaultValue를 useMemo로 메모이제이션하여 불필요한 재생성 방지
-  const titleDefaultValue = useMemo(() => 
-    `<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${publicationsData?.title || "Selected Publications"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${publicationsData?.titleKo || "주요 논문"}</span></h2>`,
-    [publicationsData?.title, publicationsData?.titleKo]
-  );
+  // 서식 유지: 저장된 HTML이 있으면 사용, 없으면 plain text로 구성
+  const titleDefaultValue = useMemo(() => {
+    const html = (publicationsData as { titleHtml?: string }).titleHtml;
+    if (html && html.trim() !== "") return html;
+    return `<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">${publicationsData?.title || "Selected Publications"}<span class="block text-2xl md:text-3xl text-gray-600 font-normal mt-2">${publicationsData?.titleKo || "주요 논문"}</span></h2>`;
+  }, [publicationsData?.title, publicationsData?.titleKo, (publicationsData as { titleHtml?: string }).titleHtml]);
   
   const descriptionDefaultValue = useMemo(() => {
-    // 빈 문자열도 체크하여 기본값 사용 방지
+    const html = (publicationsData as { descriptionHtml?: string }).descriptionHtml;
+    if (html && html.trim() !== "") return html;
     const description = publicationsData?.description?.trim() || "Recent publications in electrocatalysts, fuel cells, water electrolysis, and energy materials.";
     const descriptionKo = publicationsData?.descriptionKo?.trim() || "전기촉매, 연료전지, 수전해, 에너지 소재 분야의 최근 논문입니다.";
     return `<p class="text-base text-gray-600 max-w-2xl mx-auto">${description}<br /><span class="text-sm text-gray-500">${descriptionKo}</span></p>`;
-  }, [publicationsData?.description, publicationsData?.descriptionKo]);
+  }, [publicationsData?.description, publicationsData?.descriptionKo, (publicationsData as { descriptionHtml?: string }).descriptionHtml]);
 
   return (
     <section id="publications" className="py-16 bg-gray-50">
@@ -131,31 +135,22 @@ export default function Publications() {
               tempDiv.innerHTML = content;
               const titleElement = tempDiv.querySelector("h2");
               const titleKoElement = tempDiv.querySelector("span");
-              if (titleElement) {
-                const titleText = titleElement.childNodes[0]?.textContent || "";
-                const titleKoText = titleKoElement?.textContent || "";
-                
-                // 두 필드를 한 번에 저장
-                const updatedData = { 
-                  ...publicationsData, 
-                  title: titleText.trim(),
-                  titleKo: titleKoText.trim()
-                };
-                
-                // API에 먼저 저장
-                const response = await fetch(`${getApiBase()}/api/content`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ publications: JSON.stringify(updatedData) }),
-                });
-                if (!response.ok) {
-                  throw new Error("Failed to save");
-                }
-                
-                // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
-                // loadData()를 호출하지 않음 - 저장한 데이터를 직접 사용하여 덮어쓰기 방지
-                setPublicationsData(updatedData);
-              }
+              const titleText = (titleElement?.childNodes[0]?.textContent ?? publicationsData.title)?.trim() || publicationsData.title;
+              const titleKoText = (titleKoElement?.textContent ?? publicationsData.titleKo)?.trim() || publicationsData.titleKo;
+              const updatedData = {
+                ...publicationsData,
+                titleHtml: content,
+                title: titleText,
+                titleKo: titleKoText,
+              };
+              const response = await fetch(`${getApiBase()}/api/content`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ publications: JSON.stringify(updatedData) }),
+              });
+              if (!response.ok) throw new Error("Failed to save");
+              setPublicationsData(updatedData);
             }}
             isAuthenticated={authenticated}
           />
@@ -164,132 +159,63 @@ export default function Publications() {
               contentKey="publications-description"
               defaultValue={descriptionDefaultValue}
             onSave={async (content) => {
-              try {
-                console.log('[DEBUG] onSave 호출, content:', content);
-                
-                // 새로운 저장 로직: Quill에서 편집한 내용을 올바르게 추출
-                const tempDiv = document.createElement("div");
-                tempDiv.innerHTML = content;
-                
-                let descriptionText = "";
-                let descriptionKoText = "";
-                
-                // 방법 1: 여러 p 태그가 있는 경우 (Quill이 줄바꿈을 p 태그로 변환)
-                const pElements = tempDiv.querySelectorAll("p");
-                console.log('[DEBUG] pElements 개수:', pElements.length);
-                
-                if (pElements.length >= 2) {
-                  // 첫 번째 p: 영어
-                  descriptionText = pElements[0].textContent || pElements[0].innerText || "";
-                  // 나머지 p: 한국어 (합치기)
-                  descriptionKoText = Array.from(pElements).slice(1)
-                    .map(p => p.textContent || (p as HTMLElement).innerText || "")
-                    .filter(text => text.trim().length > 0)
-                    .join(" ");
-                  console.log('[DEBUG] 여러 p 태그에서 추출:', { descriptionText, descriptionKoText });
-                } else if (pElements.length === 1) {
-                  // 하나의 p 태그 안에 span이 있는 경우 (기존 HTML 구조)
-                  const pElement = pElements[0];
-                  
-                  // span 태그 찾기 (한국어)
-                  let spanElement = pElement.querySelector("span.text-sm.text-gray-500") as HTMLElement;
-                  if (!spanElement) {
-                    spanElement = pElement.querySelector("span") as HTMLElement;
-                  }
-                  
-                  if (spanElement) {
-                    descriptionKoText = spanElement.textContent || spanElement.innerText || "";
-                    // p 태그에서 span 제외한 텍스트 (영어)
-                    const pClone = pElement.cloneNode(true) as HTMLElement;
-                    const spanInP = pClone.querySelector("span");
-                    if (spanInP) {
-                      spanInP.remove();
-                    }
-                    const brTags = pClone.querySelectorAll("br");
-                    brTags.forEach(br => br.remove());
-                    descriptionText = pClone.textContent || pClone.innerText || "";
-                    console.log('[DEBUG] p 태그 내 span에서 추출:', { descriptionText, descriptionKoText });
+              const tempDiv = document.createElement("div");
+              tempDiv.innerHTML = content;
+              let descriptionText = "";
+              let descriptionKoText = "";
+              const pElements = tempDiv.querySelectorAll("p");
+              if (pElements.length >= 2) {
+                descriptionText = pElements[0].textContent || (pElements[0] as HTMLElement).innerText || "";
+                descriptionKoText = Array.from(pElements).slice(1)
+                  .map(p => p.textContent || (p as HTMLElement).innerText || "")
+                  .filter(t => t.trim().length > 0)
+                  .join(" ");
+              } else if (pElements.length === 1) {
+                const pElement = pElements[0];
+                const spanElement = pElement.querySelector("span.text-sm.text-gray-500") ?? pElement.querySelector("span");
+                if (spanElement) {
+                  descriptionKoText = spanElement.textContent || (spanElement as HTMLElement).innerText || "";
+                  const pClone = pElement.cloneNode(true) as HTMLElement;
+                  pClone.querySelector("span")?.remove();
+                  pClone.querySelectorAll("br").forEach(br => br.remove());
+                  descriptionText = pClone.textContent || pClone.innerText || "";
+                } else {
+                  const pClone = pElement.cloneNode(true) as HTMLElement;
+                  const parts = pClone.innerHTML.split(/<br\s*\/?>/i);
+                  if (parts.length >= 2) {
+                    const firstPart = document.createElement("div");
+                    firstPart.innerHTML = parts[0];
+                    descriptionText = firstPart.textContent || firstPart.innerText || "";
+                    const secondPart = document.createElement("div");
+                    secondPart.innerHTML = parts.slice(1).join("<br>");
+                    descriptionKoText = secondPart.textContent || secondPart.innerText || "";
                   } else {
-                    // span이 없으면 BR 태그로 분리
-                    const pClone = pElement.cloneNode(true) as HTMLElement;
-                    const brTags = pClone.querySelectorAll("br");
-                    
-                    if (brTags.length > 0) {
-                      // BR 태그를 기준으로 분리
-                      const parts = pClone.innerHTML.split(/<br\s*\/?>/i);
-                      if (parts.length >= 2) {
-                        const firstPart = document.createElement("div");
-                        firstPart.innerHTML = parts[0];
-                        descriptionText = firstPart.textContent || firstPart.innerText || "";
-                        
-                        const secondPart = document.createElement("div");
-                        secondPart.innerHTML = parts.slice(1).join("<br>");
-                        descriptionKoText = secondPart.textContent || secondPart.innerText || "";
-                        console.log('[DEBUG] BR 태그로 분리:', { descriptionText, descriptionKoText });
-                      } else {
-                        descriptionText = pClone.textContent || pClone.innerText || "";
-                      }
-                    } else {
-                      descriptionText = pClone.textContent || pClone.innerText || "";
-                    }
+                    descriptionText = pClone.textContent || pClone.innerText || "";
                   }
                 }
-                
-                // 방법 2: 전체 텍스트를 줄바꿈으로 분리 (위 방법들이 실패한 경우)
-                if (!descriptionText || !descriptionKoText) {
-                  console.log('[DEBUG] 방법 1 실패, 방법 2 시도');
-                  const fullText = tempDiv.textContent || tempDiv.innerText || "";
-                  console.log('[DEBUG] 전체 텍스트:', fullText);
-                  
-                  // 줄바꿈으로 분리 (연속된 빈 줄 제거)
-                  const lines = fullText.split(/\n+/).map(line => line.trim()).filter(line => line.length > 0);
-                  console.log('[DEBUG] 분리된 줄들:', lines);
-                  
-                  if (lines.length >= 2) {
-                    descriptionText = descriptionText || lines[0];
-                    descriptionKoText = descriptionKoText || lines.slice(1).join(" ");
-                  } else if (lines.length === 1) {
-                    descriptionText = descriptionText || lines[0];
-                  }
-                }
-                
-                console.log('[DEBUG] 최종 추출 결과:', {
-                  description: descriptionText,
-                  descriptionKo: descriptionKoText
-                });
-                
-                // 최종 검증
-                const updatedData = { 
-                  ...publicationsData, 
-                  description: descriptionText.trim(),
-                  descriptionKo: descriptionKoText.trim()
-                };
-              
-                // API에 먼저 저장
-                const response = await fetch(`${getApiBase()}/api/content`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ publications: JSON.stringify(updatedData) }),
-                });
-                
-                if (!response.ok) {
-                  const errorText = await response.text();
-                  console.error("API 저장 실패:", errorText);
-                  throw new Error("Failed to save");
-                }
-                
-                // 저장 성공 후 상태 업데이트 (저장한 데이터로 즉시 반영)
-                setPublicationsData(updatedData);
-                
-                console.log("저장 완료:", {
-                  description: updatedData.description,
-                  descriptionKo: updatedData.descriptionKo
-                });
-              } catch (error) {
-                console.error("저장 중 오류 발생:", error);
-                alert("저장 중 오류가 발생했습니다. 콘솔을 확인하세요.");
-                throw error;
               }
+              if (!descriptionText && !descriptionKoText) {
+                const fullText = (tempDiv.textContent || tempDiv.innerText || "").trim();
+                const lines = fullText.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length >= 2) {
+                  descriptionText = lines[0];
+                  descriptionKoText = lines.slice(1).join(" ");
+                } else if (lines.length === 1) descriptionText = lines[0];
+              }
+              const updatedData = {
+                ...publicationsData,
+                descriptionHtml: content,
+                description: descriptionText.trim() || publicationsData.description,
+                descriptionKo: descriptionKoText.trim() || publicationsData.descriptionKo,
+              };
+              const response = await fetch(`${getApiBase()}/api/content`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ publications: JSON.stringify(updatedData) }),
+              });
+              if (!response.ok) throw new Error("Failed to save");
+              setPublicationsData(updatedData);
             }}
             isAuthenticated={authenticated}
             />
@@ -404,12 +330,12 @@ export default function Publications() {
             </div>
         </div>
         <div className="text-center mt-8">
-          <a
+          <Link
             href="/achievements/journals"
             className="inline-block px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors text-sm"
           >
             View All Publications →
-          </a>
+          </Link>
         </div>
       </div>
     </section>

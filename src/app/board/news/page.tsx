@@ -318,6 +318,7 @@ export default function NewsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
     if (!response.ok) {
@@ -352,6 +353,7 @@ export default function NewsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
     if (!response.ok) throw new Error("Failed to add news");
@@ -369,6 +371,7 @@ export default function NewsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
     });
     if (!response.ok) throw new Error("Failed to delete news");

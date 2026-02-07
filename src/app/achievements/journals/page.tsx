@@ -278,6 +278,7 @@ export default function JournalsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
     });
     if (!response.ok) throw new Error("Failed to save");
@@ -312,6 +313,7 @@ export default function JournalsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
     });
     if (!response.ok) throw new Error("Failed to add publication");
@@ -335,6 +337,7 @@ export default function JournalsPage() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ journalPublications: JSON.stringify(updatedPublications) }),
     });
     if (!response.ok) throw new Error("Failed to delete publication");
@@ -387,6 +390,7 @@ export default function JournalsPage() {
                       const response = await fetch(`${getApiBase()}/api/content`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
+                        credentials: "include",
                         body: JSON.stringify({ journalsPage: JSON.stringify(updatedData) }),
                       });
                       
@@ -505,6 +509,7 @@ export default function JournalsPage() {
                     const response = await fetch(`${getApiBase()}/api/content`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
+                      credentials: "include",
                       body: JSON.stringify({ journalsPage: JSON.stringify(updatedData) }),
                     });
                     

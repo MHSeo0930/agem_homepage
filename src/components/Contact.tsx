@@ -5,6 +5,70 @@ import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 
+// 구글 맵 ?q=...&output=embed 는 임베드 제한으로 깨질 수 있음 → API 키 또는 OpenStreetMap 사용
+const PKNU_LAT = 35.1376;
+const PKNU_LON = 129.0847;
+const OSM_BBOX = "129.078,35.130,129.092,35.145";
+const ADDRESS = "부산광역시 남구 용소로 45";
+const GOOGLE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS)}`;
+const OSM_LINK = `https://www.openstreetmap.org/?mlat=${PKNU_LAT}&mlon=${PKNU_LON}&zoom=17`;
+
+function MapIframe() {
+  const apiKey =
+    typeof process !== "undefined" ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY : undefined;
+  const addressEncoded = encodeURIComponent(ADDRESS);
+
+  if (apiKey) {
+    return (
+      <iframe
+        src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${addressEncoded}&zoom=17&language=ko`}
+        width="100%"
+        height="100%"
+        style={{ border: 0 }}
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="strict-origin-when-cross-origin"
+        className="w-full h-full min-h-[280px]"
+        title="부산광역시 남구 용소로 45"
+      />
+    );
+  }
+
+  return (
+    <div className="w-full h-full min-h-[280px] relative">
+      <iframe
+        src={`https://www.openstreetmap.org/export/embed.html?bbox=${OSM_BBOX}&layer=mapnik&marker=${PKNU_LAT}%2C${PKNU_LON}`}
+        width="100%"
+        height="100%"
+        style={{ border: 0 }}
+        allowFullScreen
+        loading="lazy"
+        className="w-full h-full min-h-[280px] absolute inset-0"
+        title="부산광역시 남구 용소로 45"
+      />
+      {/* 일부 환경에서 iframe이 차단될 때를 위한 대체 링크 */}
+      <div className="absolute bottom-2 right-2 flex gap-2">
+        <a
+          href={GOOGLE_MAPS_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-white/95 text-gray-800 text-xs font-medium rounded shadow hover:bg-gray-100"
+        >
+          Google 지도에서 보기
+        </a>
+        <a
+          href={OSM_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-white/95 text-gray-800 text-xs font-medium rounded shadow hover:bg-gray-100"
+        >
+          OpenStreetMap
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function Contact() {
   const { authenticated } = useAuth();
   const [contactData, setContactData] = useState({
@@ -64,6 +128,7 @@ export default function Contact() {
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ contact: JSON.stringify(updatedData) }),
     });
     if (!response.ok) {
@@ -324,17 +389,7 @@ export default function Contact() {
               isAuthenticated={authenticated}
             />
             <div className="aspect-video rounded-lg mb-4 overflow-hidden border border-gray-200">
-              <iframe
-                src="https://www.google.com/maps?q=부산광역시+남구+용소로+45&output=embed&hl=ko"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-full"
-                title="부산광역시 남구 용소로 45"
-              ></iframe>
+              <MapIframe />
             </div>
             <div className="text-center">
               <EditableContent

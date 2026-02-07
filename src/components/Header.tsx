@@ -9,16 +9,18 @@ import { getApiBase } from "@/lib/apiBase";
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const { authenticated, loading } = useAuth();
+  const { authenticated, loading, checkAuth } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      await fetch(`${getApiBase()}/api/auth/logout`, { method: "POST" });
+      await fetch(`${getApiBase()}/api/auth/logout`, { method: "POST", credentials: "include" });
+      await checkAuth();
       router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
+      await checkAuth();
     }
   };
 
@@ -120,7 +122,7 @@ export default function Header() {
                   </Link>
                   <Link href="/achievements/conference" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Conference
-          </Link>
+                  </Link>
                 </div>
               </div>
             )}
@@ -148,7 +150,7 @@ export default function Header() {
                   </Link>
                   <Link href="/board/gallery" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Gallery
-          </Link>
+                  </Link>
                 </div>
               </div>
             )}
@@ -173,7 +175,7 @@ export default function Header() {
                 <div className="bg-white rounded-md shadow-lg border border-gray-200 py-2">
                   <Link href="/about-lab/map" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Map
-          </Link>
+                  </Link>
                 </div>
               </div>
             )}
