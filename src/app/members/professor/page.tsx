@@ -140,9 +140,10 @@ export default function ProfessorPage() {
   const { authenticated } = useAuth();
   const [professorData, setProfessorData] = useState<ProfessorData>(defaultProfessorData);
 
-  const loadData = async () => {
+  const loadData = async (refetchAfterSave = false) => {
     try {
-      const res = await fetch(`${getApiBase()}/api/content`);
+      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
       const data = await res.json();
       if (data.professor) {
         try {
@@ -178,10 +179,9 @@ export default function ProfessorPage() {
       if (field !== "image") setProfessorData(professorData);
       throw new Error("Failed to save");
     }
-    // 이미지 저장 후에도 잠시 뒤 서버에서 다시 불러와 반영
     const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
-      await loadData();
+      await loadData(field === "image");
     }, delay);
   };
 

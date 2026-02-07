@@ -71,9 +71,10 @@ export default function AlumniPage() {
     },
   ]);
 
-  const loadData = async () => {
+  const loadData = async (refetchAfterSave = false) => {
     try {
-      const res = await fetch(`${getApiBase()}/api/content`);
+      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
       const data = await res.json();
       if (data.alumni) {
         try {
@@ -119,7 +120,7 @@ export default function AlumniPage() {
     }
     const delay = field === "image" ? 400 : 50;
     setTimeout(async () => {
-      await loadData();
+      await loadData(field === "image");
     }, delay);
   };
 

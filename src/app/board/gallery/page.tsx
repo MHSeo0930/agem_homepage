@@ -170,9 +170,10 @@ export default function GalleryPage() {
     },
   ]);
 
-  const loadData = async () => {
+  const loadData = async (refetchAfterSave = false) => {
     try {
-      const res = await fetch(`${getApiBase()}/api/content`);
+      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
       const data = await res.json();
       if (data.gallery) {
         try {
@@ -239,10 +240,10 @@ export default function GalleryPage() {
       throw new Error(`저장 실패 (${response.status}): ${msg}`);
     }
     
-    // 이미지 저장 후에도 잠시 뒤 서버에서 다시 불러와 반영 (재시작 없이 화면 갱신)
     const delay = field === "image" ? 400 : 50;
+    const refetchAfterSave = field === "image";
     setTimeout(async () => {
-      await loadData();
+      await loadData(refetchAfterSave);
     }, delay);
   };
 
