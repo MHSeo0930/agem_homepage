@@ -23,11 +23,13 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const timestamp = Date.now();
-    const filename = `${timestamp}-${file.name}`;
+    // 한글·공백 파일명은 URL/서버에서 404 나는 경우가 있어, 저장명은 영숫자만 사용
+    const ext = path.extname(file.name)?.toLowerCase() || '.jpg';
+    const safeFilename = `${timestamp}-${Math.random().toString(36).slice(2, 10)}${ext}`;
 
     // Vercel: Blob 사용 시 영구 저장
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const blob = await put(`uploads/${filename}`, buffer, {
+      const blob = await put(`uploads/${safeFilename}`, buffer, {
         access: 'public',
         addRandomSuffix: false,
       });
@@ -53,11 +55,11 @@ export async function POST(request: NextRequest) {
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true });
     }
-    const filepath = path.join(uploadsDir, filename);
+    const filepath = path.join(uploadsDir, safeFilename);
     await writeFile(filepath, buffer);
 
     const basePath = process.env.NEXT_PUBLIC_BASEPATH || '/agem_homepage';
-    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${filename}`;
+    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${safeFilename}`;
 
     return NextResponse.json({
       success: true,
