@@ -54,13 +54,18 @@ export default function EditableImage({
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const msg = (data as { error?: string }).error || response.statusText;
+        alert(`업로드 실패 (${response.status}): ${msg}\n\n로그인 상태·NAS의 public/uploads 쓰기 권한을 확인하세요.`);
+        return;
+      }
       if (data.success) {
-        const url = data.url.startsWith("http")
-          ? data.url
-          : data.url.startsWith("/")
-            ? data.url
-            : getApiBase() + data.url;
+        const url = (data.url as string).startsWith("http")
+          ? (data.url as string)
+          : (data.url as string).startsWith("/")
+            ? (data.url as string)
+            : getApiBase() + (data.url as string);
         setImageSrc(url);
         try {
           await onSave(url);
@@ -70,11 +75,11 @@ export default function EditableImage({
           alert("이미지는 업로드됐지만 저장에 실패했습니다. NAS에서 data/ 폴더 쓰기 권한을 확인하세요.");
         }
       } else {
-        alert(data.error || "Failed to upload image");
+        alert((data as { error?: string }).error || "Failed to upload image");
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload image");
+      alert("업로드 요청 실패. 네트워크와 주소를 확인하세요.");
     } finally {
       setUploading(false);
     }

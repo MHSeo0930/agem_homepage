@@ -177,7 +177,15 @@ export default function GalleryPage() {
       if (data.gallery) {
         try {
           const parsed = JSON.parse(data.gallery);
-          setGalleryItems(parsed);
+          // 업로드 경로가 /uploads/ 만 있으면 basePath 붙여서 NAS·Vercel에서 로드되도록
+          const basePath = getApiBase();
+          const normalized = parsed.map((item: { image?: string; [k: string]: unknown }) => ({
+            ...item,
+            image: item.image?.startsWith("/uploads/") && !item.image.startsWith("/agem_homepage")
+              ? `${basePath}/uploads/${item.image.replace(/^\/uploads\//, "")}`
+              : item.image,
+          }));
+          setGalleryItems(normalized);
         } catch (e) {
           console.error("Failed to parse gallery data");
         }
@@ -225,13 +233,15 @@ export default function GalleryPage() {
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) {
-      // 실패 시 이전 상태로 복원
       setGalleryItems(galleryItems);
-      throw new Error("Failed to save");
+      const errBody = await response.json().catch(() => ({}));
+      const msg = (errBody as { error?: string }).error || response.statusText;
+      throw new Error(`저장 실패 (${response.status}): ${msg}`);
     }
     
-    // 저장 후 데이터 다시 로드하여 서버와 동기화
-    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    // 이미지 저장 후에는 loadData() 생략 → 방금 반영한 상태가 덮어쓰이지 않음 (NAS 등에서 즉시 반영)
+    if (field === "image") return;
+    // 제목 등 다른 필드는 저장 후 서버와 동기화
     setTimeout(async () => {
       await loadData();
     }, 50);
@@ -372,11 +382,12 @@ export default function GalleryPage() {
                       </div>
                     ) : (
                       <Image
-                        src={item.image}
+                        src={item.image?.startsWith("/") && typeof window !== "undefined" ? window.location.origin + item.image : item.image}
                         alt={item.title}
                         fill
                         className="object-contain"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        unoptimized={item.image?.includes("/uploads/")}
                         onError={() => {
                           // 이미지 로드 실패 시 플레이스홀더 표시
                         }}

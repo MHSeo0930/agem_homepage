@@ -151,7 +151,14 @@ export default function CurrentMembersPage() {
       if (data.members) {
         try {
           const parsed = JSON.parse(data.members);
-          setMembers(parsed);
+          const basePath = getApiBase();
+          const normalized = parsed.map((m: { image?: string; [k: string]: unknown }) => ({
+            ...m,
+            image: m.image?.startsWith("/uploads/") && !m.image.startsWith("/agem_homepage")
+              ? `${basePath}/uploads/${m.image.replace(/^\/uploads\//, "")}`
+              : m.image,
+          }));
+          setMembers(normalized);
         } catch (e) {
           console.error("Failed to parse members data");
         }
@@ -180,13 +187,11 @@ export default function CurrentMembersPage() {
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) {
-      // 실패 시 이전 상태로 복원
       setMembers(members);
       throw new Error("Failed to save");
     }
-    
-    // 저장 후 데이터 다시 로드하여 서버와 동기화
-    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    // 이미지 저장 후에는 loadData 생략 → 올린 사진이 바로 반영되도록
+    if (field === "image") return;
     setTimeout(async () => {
       await loadData();
     }, 50);

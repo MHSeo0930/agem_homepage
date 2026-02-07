@@ -174,12 +174,11 @@ export default function ProfessorPage() {
       body: JSON.stringify({ professor: JSON.stringify(updatedData) }),
     });
     if (!response.ok) {
-      // 실패 시 이전 상태로 복원
       setProfessorData(professorData);
       throw new Error("Failed to save");
     }
-    
-    // 저장 후 데이터 다시 로드하여 서버와 동기화
+    // 이미지 저장 후에는 loadData 생략 → 올린 사진이 바로 반영되도록 (갤러리와 동일)
+    if (field === "image") return;
     setTimeout(async () => {
       await loadData();
     }, 50);

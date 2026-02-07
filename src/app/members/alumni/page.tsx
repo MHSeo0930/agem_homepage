@@ -78,7 +78,14 @@ export default function AlumniPage() {
       if (data.alumni) {
         try {
           const parsed = JSON.parse(data.alumni);
-          setAlumni(parsed);
+          const basePath = getApiBase();
+          const normalized = parsed.map((a: { image?: string; [k: string]: unknown }) => ({
+            ...a,
+            image: a.image?.startsWith("/uploads/") && !a.image.startsWith("/agem_homepage")
+              ? `${basePath}/uploads/${a.image.replace(/^\/uploads\//, "")}`
+              : a.image,
+          }));
+          setAlumni(normalized);
         } catch (e) {
           console.error("Failed to parse alumni data");
         }
@@ -107,13 +114,11 @@ export default function AlumniPage() {
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) {
-      // 실패 시 이전 상태로 복원
       setAlumni(alumni);
       throw new Error("Failed to save");
     }
-    
-    // 저장 후 데이터 다시 로드하여 서버와 동기화
-    // 약간의 지연을 두어 EditableContent가 먼저 업데이트되도록 함
+    // 이미지 저장 후에는 loadData 생략 → 올린 사진이 바로 반영되도록
+    if (field === "image") return;
     setTimeout(async () => {
       await loadData();
     }, 50);

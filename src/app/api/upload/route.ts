@@ -7,6 +7,23 @@ import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 
+/** 한글·공백·괄호 등 특수문자가 있으면 true (저장 시 영문 파일명으로 대체하기 위함) */
+function hasUnsafeFilename(name: string): boolean {
+  return /[^\x00-\x7F]/.test(name) || /[\s()[\]{}~!@#$%^&*+=\\|;:'",<>?]/.test(name);
+}
+
+/** 저장용 파일명: 한글/특수문자 있으면 타임스탬프-랜덤.확장자(영문), 아니면 타임스탬프-영문파일명.확장자 */
+function getSaveFilename(originalName: string, timestamp: number): string {
+  const ext = path.extname(originalName)?.toLowerCase() || '.jpg';
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  if (hasUnsafeFilename(originalName)) {
+    return `${timestamp}-${randomPart}${ext}`;
+  }
+  const base = path.basename(originalName, path.extname(originalName)) || 'image';
+  const safeBase = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'image';
+  return `${timestamp}-${safeBase}${ext}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!(await isAuthenticated())) {
@@ -23,9 +40,7 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const timestamp = Date.now();
-    // 한글·공백 파일명은 URL/서버에서 404 나는 경우가 있어, 저장명은 영숫자만 사용
-    const ext = path.extname(file.name)?.toLowerCase() || '.jpg';
-    const safeFilename = `${timestamp}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+    const safeFilename = getSaveFilename(file.name, timestamp);
 
     // Vercel: Blob 사용 시 영구 저장
     if (process.env.BLOB_READ_WRITE_TOKEN) {
