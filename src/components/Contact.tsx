@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { postContent } from "@/lib/contentApi";
 
 // 구글 맵 ?q=...&output=embed 는 임베드 제한으로 깨질 수 있음 → API 키 또는 OpenStreetMap 사용
 const PKNU_LAT = 35.1376;
@@ -125,16 +126,11 @@ export default function Contact() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setContactData(updatedData);
     
-    const response = await fetch(`${getApiBase()}/api/content`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ contact: JSON.stringify(updatedData) }),
-    });
-    if (!response.ok) {
-      // 실패 시 이전 상태로 복원
+    try {
+      await postContent({ contact: JSON.stringify(updatedData) });
+    } catch (e) {
       setContactData(contactData);
-      throw new Error("Failed to save");
+      throw e;
     }
     
     // 저장 후 데이터 다시 로드하여 서버와 동기화

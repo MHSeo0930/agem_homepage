@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { postContent } from "@/lib/contentApi";
 
 export default function Research() {
   const { authenticated } = useAuth();
@@ -67,16 +68,11 @@ export default function Research() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
-    const response = await fetch(`${getApiBase()}/api/content`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ research: JSON.stringify(updatedData) }),
-    });
-    if (!response.ok) {
-      // 실패 시 이전 상태로 복원
+    try {
+      await postContent({ research: JSON.stringify(updatedData) });
+    } catch (e) {
       setResearchData(researchData);
-      throw new Error("Failed to save");
+      throw e;
     }
     
     // 저장 후 데이터 다시 로드하여 서버와 동기화
@@ -94,16 +90,11 @@ export default function Research() {
     // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setResearchData(updatedData);
     
-    const response = await fetch(`${getApiBase()}/api/content`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ research: JSON.stringify(updatedData) }),
-    });
-    if (!response.ok) {
-      // 실패 시 이전 상태로 복원
+    try {
+      await postContent({ research: JSON.stringify(updatedData) });
+    } catch (e) {
       setResearchData(researchData);
-      throw new Error("Failed to save");
+      throw e;
     }
     
     // 저장 후 데이터 다시 로드하여 서버와 동기화
@@ -143,15 +134,11 @@ export default function Research() {
               const titleKoText = (titleKoElement?.textContent ?? researchData.titleKo)?.trim() || researchData.titleKo;
               const updatedData = { ...researchData, titleHtml: contentWithClasses, title: titleText, titleKo: titleKoText };
               setResearchData(updatedData);
-              const response = await fetch(`${getApiBase()}/api/content`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ research: JSON.stringify(updatedData) }),
-              });
-              if (!response.ok) {
+              try {
+                await postContent({ research: JSON.stringify(updatedData) });
+              } catch (e) {
                 setResearchData(researchData);
-                throw new Error("Failed to save");
+                throw e;
               }
             }}
             isAuthenticated={authenticated}
@@ -174,15 +161,11 @@ export default function Research() {
               const descriptionKoText = (spanEl?.textContent ?? researchData.descriptionKo)?.trim() || researchData.descriptionKo;
               const updatedData = { ...researchData, descriptionHtml: content, description: descriptionText, descriptionKo: descriptionKoText };
               setResearchData(updatedData);
-              const response = await fetch(`${getApiBase()}/api/content`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ research: JSON.stringify(updatedData) }),
-              });
-              if (!response.ok) {
+              try {
+                await postContent({ research: JSON.stringify(updatedData) });
+              } catch (e) {
                 setResearchData(researchData);
-                throw new Error("Failed to save");
+                throw e;
               }
             }}
             isAuthenticated={authenticated}

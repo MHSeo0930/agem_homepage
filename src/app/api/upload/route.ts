@@ -37,6 +37,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Vercel인데 Blob 없음: 디스크 쓰기 불가
+    if (process.env.VERCEL === '1') {
+      return NextResponse.json(
+        {
+          error:
+            '배포 사이트에서는 이미지 업로드가 되지 않습니다. 로컬에서 이미지를 public/uploads에 넣고 Git에 푸시해 주세요.',
+        },
+        { status: 500 }
+      );
+    }
+
     // 로컬: public/uploads
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     if (!existsSync(uploadsDir)) {

@@ -29,6 +29,41 @@
 
 ---
 
+## 로컬에서만 작업 후 배포 (Redis/Blob 없이, 용량/비용 절감)
+
+**편집은 로컬에서만 하고, 변경분을 Git에 올려 배포**하는 방식입니다. Vercel에서 Redis·Blob을 쓰지 않아 용량/비용 부담이 없습니다.
+
+### 워크플로우
+1. **로컬에서 편집**  
+   - `npm run dev` 후 `http://localhost:3000/agem_homepage`에서 로그인해 콘텐츠·엑셀·이미지 수정  
+   - 저장 시 `data/content.json`, `data/journals.xlsx`, `public/uploads/` 등에 반영됨  
+
+2. **한 번에 Git + Vercel 반영**  
+   - 아래 명령 하나면 **빌드 후 전체**를 Git에 푸시하고, Vercel이 자동 배포합니다.  
+   ```bash
+   npm run deploy
+   ```
+   - 커밋 메시지 지정: `npm run deploy -- "메인 문구 수정"`  
+   - 동작: `npm run build` → `git add .` → `git commit` → `git push origin main` → Vercel 자동 배포  
+
+3. **콘텐츠만 올리고 싶을 때**  
+   - `npm run push:content` — `data/content.json`, `data/journals.xlsx`, `public/uploads/` 만 커밋·푸시  
+
+4. **배포 사이트에서는 저장/업로드 불가**  
+   - Redis·Blob을 쓰지 않으므로, 배포된 사이트에서 "저장" 또는 "이미지 업로드"를 하면  
+     *"배포 사이트에서는 저장되지 않습니다. 로컬에서 수정한 뒤 Git에 푸시해 주세요."*  
+     안내가 뜹니다. 편집·업로드는 로컬에서만 하면 됩니다.  
+
+### Vercel 설정
+- **환경 변수**: `ADMIN_USERNAME`, `ADMIN_PASSWORD`만 넣으면 됩니다.  
+- **Redis·Blob**: 사용하지 않으면 연결하지 않아도 됩니다.  
+
+### 주의
+- `data/content.json`, `data/journals.xlsx`가 커밋되므로 민감한 정보는 넣지 마세요.  
+- 나중에 Redis/Blob을 쓰려면 `.gitignore`에서 `data/*.json`, `data/*.xlsx`를 다시 활성화하고, Vercel Storage를 연결하면 됩니다.
+
+---
+
 ## 배포 전 준비사항
 
 ### 1. Git 저장소에 푸시
@@ -64,8 +99,8 @@ NODE_ENV=production
 Vercel은 디스크에 파일을 영구 저장하지 않습니다. 아래 저장소를 연결하면 **편집한 콘텐츠·업로드 이미지·엑셀**이 재배포 후에도 유지됩니다.
 
 1. **Upstash Redis** – 콘텐츠(연락처, 뉴스, 갤러리, 논문 등) 저장  
-   - Vercel 대시보드 → 프로젝트 → Storage → Create Database → **Upstash Redis** 선택 후 생성  
-   - 생성 시 자동으로 프로젝트에 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 이 추가됩니다.
+   - Vercel 대시보드 → 프로젝트 → Storage → Create Database → **Upstash Redis** 선택 후 생성 (이름 예: `agem-storage`)  
+   - 생성 후 해당 스토어를 agem-homepage 프로젝트에 **연결(Link)**하면 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 이 자동으로 추가됩니다.
 
 2. **Vercel Blob** – 이미지 업로드·엑셀 파일 저장  
    - Storage → **Blob** Create Store 후 프로젝트에 연결  
@@ -99,6 +134,27 @@ NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=여기에_Google_Maps_Embed_API_키
   에디터에서 업로드한 이미지와 Achievements의 엑셀 파일이 Blob에 저장됩니다.  
   설정하지 않으면 로컬에서는 `public/uploads`와 `data/journals.xlsx`를 사용하고, Vercel에서는 업로드·엑셀 저장이 재배포 시 사라질 수 있습니다.
 
+## Vercel 콘텐츠를 로컬로 백업한 뒤 Git에 올리기
+
+Vercel(Redis)에서 수정한 콘텐츠는 Git에 자동 반영되지 않습니다. 주기적으로 로컬로 백업한 뒤 커밋·푸시하면 **버전 관리**와 **백업**을 함께 할 수 있습니다.
+
+1. **백업 실행** (Vercel에 배포된 주소에서 콘텐츠를 받아 `data/content.json`으로 저장)
+   ```bash
+   # 배포 URL을 인자로 넘기거나
+   node scripts/backup-from-vercel.js https://agem-homepage-xxx.vercel.app/agem_homepage
+
+   # 또는 .env에 BACKUP_SOURCE_URL 설정 후
+   BACKUP_SOURCE_URL=https://agem-homepage-xxx.vercel.app/agem_homepage npm run backup:vercel
+   ```
+2. **Git에 반영**
+   ```bash
+   git add data/content.json
+   git commit -m "Backup content from Vercel"
+   git push origin main
+   ```
+
+배포 URL은 Vercel 대시보드 → 프로젝트 → Domains에서 확인할 수 있습니다 (예: `agem-homepage-xxx.vercel.app`). basePath가 있으므로 URL 끝에 `/agem_homepage`를 붙여 사용하세요.
+
 ## 커스텀 도메인 연결
 
 ### 1. Vercel에서 도메인 추가
@@ -126,6 +182,19 @@ NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY=여기에_Google_Maps_Embed_API_키
 5. ✅ 데이터 저장/불러오기 확인
 
 ## 문제 해결
+
+### 엑셀 다운로드/저장 시 "EROFS: read-only file system" 또는 "엑셀 저장을 위해 Vercel Blob 연결이 필요합니다"
+- **원인**: Vercel은 디스크에 파일을 쓸 수 없어, 엑셀 파일(`journals.xlsx`)을 Blob에 저장해야 합니다.
+- **해결**: Vercel 대시보드 → 프로젝트 → **Storage** → **Create Database** → **Blob** 선택 후 생성하고, 프로젝트에 연결합니다. `BLOB_READ_WRITE_TOKEN`이 자동 추가된 뒤 **Redeploy** 하면 엑셀 다운로드·저장이 동작합니다.
+
+### 편집 시 "Failed to save content" (저장 실패)
+- **원인**: Vercel은 디스크에 파일을 영구 저장하지 않습니다. **Upstash Redis**가 연결되지 않으면 콘텐츠 저장이 불가능합니다.
+- **해결**:
+  1. [Vercel 대시보드](https://vercel.com/dashboard) → **agem-homepage** 프로젝트 선택
+  2. **Storage** → **Create Database** → **Upstash Redis** 선택 후 생성
+  3. 생성된 Redis를 프로젝트에 연결(자동으로 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 환경 변수 추가됨)
+  4. **Redeploy** 실행
+- 저장 실패 시 알림에 "Vercel에서는 콘텐츠 저장을 위해 Upstash Redis가 필요합니다…" 문구가 표시되면 위 순서대로 Redis를 연결하면 됩니다.
 
 ### 편집 시 "404 NOT_FOUND" / "저장 중 오류가 발생했습니다"
 - **원인**: 앱이 `basePath: '/agem_homepage'`로 배포되므로, 실제 API 경로는 `/agem_homepage/api/...` 입니다. API 요청이 basePath 없이 `/api/...`로 가면 Vercel이 해당 리소스를 찾지 못해 NOT_FOUND(404)를 반환합니다.

@@ -18,7 +18,7 @@ async function ensureDataDir() {
   }
 }
 
-/** 엑셀 파일 버퍼 가져오기: Blob URL 또는 로컬 파일 */
+/** 엑셀 파일 버퍼 가져오기: Blob URL 또는 로컬/배포본 파일. Vercel에서도 Git에 포함된 파일은 읽기 가능 */
 async function getExcelBuffer(): Promise<Buffer | null> {
   const content = (await getContent()) as { excelBlobUrl?: string };
   if (content.excelBlobUrl) {
@@ -47,6 +47,10 @@ async function saveExcelBuffer(buffer: Buffer): Promise<void> {
     const c = (await getContent()) as Record<string, unknown>;
     c.excelBlobUrl = blob.url;
     await saveContent(c);
+  } else if (process.env.VERCEL === "1") {
+    throw new Error(
+      "배포 사이트에서는 엑셀 저장이 되지 않습니다. 로컬에서 수정한 뒤 data/journals.xlsx를 Git에 푸시해 주세요."
+    );
   } else {
     await ensureDataDir();
     await writeFile(EXCEL_FILE_PATH, buffer);

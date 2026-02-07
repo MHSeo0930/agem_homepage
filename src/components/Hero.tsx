@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { postContent } from "@/lib/contentApi";
 
 export default function Hero() {
   const { authenticated } = useAuth();
@@ -30,16 +31,11 @@ export default function Hero() {
       setLabName(content);
     }
     
-    const response = await fetch(`${getApiBase()}/api/content`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ [key]: content }),
-    });
-    if (!response.ok) {
-      // 실패 시 이전 상태로 복원
+    try {
+      await postContent({ [key]: content });
+    } catch (e) {
       setLabName(previousLabName);
-      throw new Error("Failed to save");
+      throw e;
     }
     
     // 저장 후 데이터 다시 로드하여 서버와 동기화

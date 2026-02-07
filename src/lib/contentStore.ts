@@ -47,6 +47,10 @@ export async function getContent(): Promise<Record<string, unknown>> {
   return {};
 }
 
+/** Vercel 배포 시 Redis 미연결로 저장 불가일 때 사용하는 에러 메시지 (로컬 작업 후 배포 방식 안내) */
+export const VERCEL_REDIS_REQUIRED_MESSAGE =
+  "배포 사이트에서는 저장되지 않습니다. 로컬에서 수정한 뒤 data/content.json을 Git에 푸시해 주세요.";
+
 export async function saveContent(content: Record<string, unknown>): Promise<void> {
   if (useRedis()) {
     try {
@@ -61,6 +65,11 @@ export async function saveContent(content: Record<string, unknown>): Promise<voi
       console.error("Redis saveContent error:", e);
       throw e;
     }
+  }
+
+  // Vercel은 디스크에 영구 저장되지 않음 → Redis 필수
+  if (process.env.VERCEL === "1") {
+    throw new Error(VERCEL_REDIS_REQUIRED_MESSAGE);
   }
 
   await ensureDataDir();

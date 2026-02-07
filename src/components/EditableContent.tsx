@@ -153,7 +153,8 @@ export default function EditableContent({
       // 저장 직후 플래그는 useEffect에서 처리한 후 리셋됨
     } catch (error) {
       console.error("Save error:", error);
-      alert("Failed to save content");
+      const msg = error instanceof Error ? error.message : "Failed to save content";
+      alert(msg);
       // 에러 발생 시 편집 모드로 복귀하지 않음 (이미 setIsEditing(false) 호출됨)
     } finally {
       setSaving(false);
