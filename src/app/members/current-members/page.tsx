@@ -187,10 +187,9 @@ export default function CurrentMembersPage() {
       body: JSON.stringify({ members: JSON.stringify(updatedMembers) }),
     });
     if (!response.ok) {
-      setMembers(members);
+      if (field !== "image") setMembers(members);
       throw new Error("Failed to save");
     }
-    // 이미지 저장 후에는 loadData 생략 → 올린 사진이 바로 반영되도록
     if (field === "image") return;
     setTimeout(async () => {
       await loadData();

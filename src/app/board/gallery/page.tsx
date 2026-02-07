@@ -233,7 +233,7 @@ export default function GalleryPage() {
       body: JSON.stringify({ gallery: JSON.stringify(updatedGallery) }),
     });
     if (!response.ok) {
-      setGalleryItems(galleryItems);
+      if (field !== "image") setGalleryItems(galleryItems);
       const errBody = await response.json().catch(() => ({}));
       const msg = (errBody as { error?: string }).error || response.statusText;
       throw new Error(`저장 실패 (${response.status}): ${msg}`);

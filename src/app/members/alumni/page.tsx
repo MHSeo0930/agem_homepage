@@ -114,10 +114,9 @@ export default function AlumniPage() {
       body: JSON.stringify({ alumni: JSON.stringify(updatedAlumni) }),
     });
     if (!response.ok) {
-      setAlumni(alumni);
+      if (field !== "image") setAlumni(alumni);
       throw new Error("Failed to save");
     }
-    // 이미지 저장 후에는 loadData 생략 → 올린 사진이 바로 반영되도록
     if (field === "image") return;
     setTimeout(async () => {
       await loadData();

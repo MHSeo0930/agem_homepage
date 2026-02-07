@@ -71,7 +71,7 @@ export default function EditableImage({
           await onSave(url);
         } catch (saveErr) {
           console.error("Save image URL error:", saveErr);
-          setImageSrc(src);
+          // 실패해도 화면에는 올린 이미지 유지(실시간 반영), 저장만 실패 알림
           alert("이미지는 업로드됐지만 저장에 실패했습니다. NAS에서 data/ 폴더 쓰기 권한을 확인하세요.");
         }
       } else {
