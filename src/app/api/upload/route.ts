@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
     await writeFile(filepath, buffer);
 
     const basePath = process.env.NEXT_PUBLIC_BASEPATH || '/agem_homepage';
-    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${safeFilename}`;
+    // 캐시 방지: 새 파일이 브라우저/서버에 404로 캐시되는 것 방지 → 업로드 직후 반영
+    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${safeFilename}?t=${timestamp}`;
 
     return NextResponse.json({
       success: true,

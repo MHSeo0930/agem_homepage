@@ -29,11 +29,21 @@ export default function EditableImage({
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** 업로드 직후 부모가 아직 예전 src를 넘길 때 prop으로 덮어쓰지 않도록 */
+  const justUploadedUrlRef = useRef<string | null>(null);
 
   // 이미지가 로드되었는지 확인
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
+    // 방금 업로드한 URL이 있는데 부모 쪽 src가 아직 예전 값이면 덮어쓰지 않음 → 즉시 반영 유지
+    if (justUploadedUrlRef.current !== null) {
+      if (src === justUploadedUrlRef.current) {
+        justUploadedUrlRef.current = null;
+      } else {
+        return;
+      }
+    }
     setImageSrc(src);
     setImageError(false);
     setImageLoaded(false);
@@ -67,6 +77,11 @@ export default function EditableImage({
             ? (data.url as string)
             : getApiBase() + (data.url as string);
         setImageSrc(url);
+        justUploadedUrlRef.current = url;
+        // 일정 시간 후 ref 해제 → 다른 항목으로 전환 시 prop 정상 반영
+        setTimeout(() => {
+          justUploadedUrlRef.current = null;
+        }, 3000);
         try {
           await onSave(url);
         } catch (saveErr) {
