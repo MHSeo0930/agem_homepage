@@ -235,7 +235,7 @@ export default function ProfessorPage() {
                     contentKey="professor-image"
                     onSave={handleImageSave}
                     isAuthenticated={authenticated}
-                    className="object-cover"
+                    className="object-cover object-top"
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />

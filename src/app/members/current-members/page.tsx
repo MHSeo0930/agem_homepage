@@ -153,12 +153,15 @@ export default function CurrentMembersPage() {
         try {
           const parsed = JSON.parse(data.members);
           const basePath = getApiBase();
-          const normalized = parsed.map((m: { image?: string; [k: string]: unknown }) => ({
-            ...m,
-            image: m.image?.startsWith("/uploads/") && !m.image.startsWith("/agem_homepage")
+          const normalized = parsed.map((m: { image?: string; [k: string]: unknown }) => {
+            let img = m.image?.startsWith("/uploads/") && !m.image.startsWith("/agem_homepage")
               ? `${basePath}/uploads/${m.image.replace(/^\/uploads\//, "")}`
-              : m.image,
-          }));
+              : m.image;
+            if (img && typeof img === "string" && img.includes("/uploads/") && !img.includes("/api/uploads/")) {
+              img = img.replace(/\/uploads\//, "/api/uploads/");
+            }
+            return { ...m, image: img };
+          });
           setMembers(normalized);
         } catch (e) {
           console.error("Failed to parse members data");
@@ -307,7 +310,7 @@ export default function CurrentMembersPage() {
                         contentKey={`member-${member.id}-image`}
                         onSave={(url) => handleImageSave(member.id, url)}
                         isAuthenticated={authenticated}
-                        className="w-full h-full rounded-lg object-cover"
+                        className="w-full h-full rounded-lg object-cover object-top"
                       />
                     </div>
                   </div>

@@ -80,12 +80,15 @@ export default function AlumniPage() {
         try {
           const parsed = JSON.parse(data.alumni);
           const basePath = getApiBase();
-          const normalized = parsed.map((a: { image?: string; [k: string]: unknown }) => ({
-            ...a,
-            image: a.image?.startsWith("/uploads/") && !a.image.startsWith("/agem_homepage")
+          const normalized = parsed.map((a: { image?: string; [k: string]: unknown }) => {
+            let img = a.image?.startsWith("/uploads/") && !a.image.startsWith("/agem_homepage")
               ? `${basePath}/uploads/${a.image.replace(/^\/uploads\//, "")}`
-              : a.image,
-          }));
+              : a.image;
+            if (img && typeof img === "string" && img.includes("/uploads/") && !img.includes("/api/uploads/")) {
+              img = img.replace(/\/uploads\//, "/api/uploads/");
+            }
+            return { ...a, image: img };
+          });
           setAlumni(normalized);
         } catch (e) {
           console.error("Failed to parse alumni data");
@@ -233,7 +236,7 @@ export default function AlumniPage() {
                         contentKey={`alumnus-${alumnus.id}-image`}
                         onSave={(url) => handleImageSave(alumnus.id, url)}
                         isAuthenticated={authenticated}
-                        className="w-full h-full rounded-lg object-cover"
+                        className="w-full h-full rounded-lg object-cover object-top"
                       />
                     </div>
                   </div>

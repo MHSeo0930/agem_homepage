@@ -11,20 +11,29 @@ echo "  [2] 배포      — 빌드 후 Git 푸시 → GitHub Pages 자동 배포
 echo ""
 read -p "선택 (1 또는 2): " choice
 
-# 3000 포트 사용 프로세스 종료 (Mac: lsof, NAS/리눅스: fuser 등)
+# 3000 포트 사용 프로세스 종료 (기존 것 끊고 3000 그대로 사용)
 kill_port_3000() {
+  local pids=""
   if command -v lsof >/dev/null 2>&1; then
-    if lsof -ti :3000 >/dev/null 2>&1; then
-      echo "기존 3000 포트 프로세스 종료 중..."
-      kill $(lsof -ti :3000) 2>/dev/null || true
-      sleep 1
-    fi
-  elif command -v fuser >/dev/null 2>&1; then
-    if fuser 3000/tcp >/dev/null 2>&1; then
-      echo "기존 3000 포트 프로세스 종료 중..."
-      fuser -k 3000/tcp 2>/dev/null || true
-      sleep 1
-    fi
+    pids=$(lsof -ti :3000 2>/dev/null || true)
+  fi
+  if [ -z "$pids" ] && command -v fuser >/dev/null 2>&1; then
+    fuser -k 3000/tcp 2>/dev/null || true
+    sleep 2
+    return
+  fi
+  if [ -z "$pids" ] && command -v ss >/dev/null 2>&1; then
+    pids=$(ss -tlnp 2>/dev/null | grep ':3000' | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | tr '\n' ' ')
+  fi
+  if [ -z "$pids" ] && command -v netstat >/dev/null 2>&1; then
+    pids=$(netstat -tlnp 2>/dev/null | grep ':3000' | awk '{print $7}' | cut -d'/' -f1 | tr '\n' ' ')
+  fi
+  if [ -n "$pids" ]; then
+    echo "기존 3000 포트 프로세스 종료 중... (PID: $pids)"
+    for pid in $pids; do
+      [ "$pid" -gt 0 ] 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+    done
+    sleep 2
   fi
 }
 

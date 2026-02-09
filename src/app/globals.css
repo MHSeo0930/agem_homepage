@@ -94,6 +94,9 @@ div.editable-content-display h4 {
   color: #6b7280;
 }
 
+/* 헤딩 블록(h1~h4)의 font-size는 위에서 !important로 지정됨. 그 안의 인라인 글자 크기(style="font-size: Npx")는
+   해당 span/요소에 직접 적용되므로 별도 규칙 없이 인라인이 우선함. 충돌 시 에디터/표시 영역에서
+   인라인 font-size 있는 요소는 덮지 않도록 유지함. */
 
 
 

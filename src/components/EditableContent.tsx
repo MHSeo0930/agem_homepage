@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
+import Delta from "quill-delta";
 import { getApiBase } from "@/lib/apiBase";
 import { registerQuillFontSize } from "@/lib/registerQuillFontSize";
 import "react-quill/dist/quill.snow.css";
@@ -42,6 +43,9 @@ export default function EditableContent({
   const quillRef = useRef<any>(null);
   const quillInstanceRef = useRef<any>(null);
   const fontSizeInputRef = useRef<HTMLInputElement>(null);
+  /** 글자 크기 적용 시 사용할 선택 영역 (버튼 클릭 시 포커스 이동으로 selection이 사라지므로 저장) */
+  const lastSelectionRef = useRef<{ index: number; length: number } | null>(null);
+  const selectionChangeHandlerRef = useRef<((range: { index: number; length: number } | null) => void) | null>(null);
 
   // defaultValue 변경 추적을 위한 ref
   const prevDefaultValueRef = useRef<string>(defaultValue);
@@ -207,31 +211,53 @@ export default function EditableContent({
     };
   };
 
-  const modules = {
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "image"],
-        [{ align: [] }],
-        ["clean"],
-      ],
-      handlers: {
-        image: imageHandler,
+  // 툴바에 글자 크기(px)를 넣기 위해 커스텀 컨테이너 사용 (id로 지정)
+  const toolbarId = `quill-toolbar-${contentKey}-${quillKey}`;
+  const modules = useMemo(
+    () => ({
+      toolbar: {
+        container: `#${toolbarId}`,
+        handlers: {
+          image: imageHandler,
+        },
       },
-    },
-  };
+    }),
+    [toolbarId]
+  );
 
-  const applyFontSize = () => {
+  // 글자 크기(px) 적용을 위해 'fontSize' 포맷 허용 (기본 size는 Class라 충돌하므로 별도 포맷 사용)
+  const quillFormats = [
+    "header", "bold", "italic", "underline", "strike",
+    "list", "link", "image", "align",
+    "fontSize", // 인라인 font-size (registerQuillFontSize에서 Style로 등록)
+  ];
+
+  const applyFontSize = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const quill = quillInstanceRef.current;
     const input = fontSizeInputRef.current;
     if (!quill || !input) return;
     const num = parseInt(input.value, 10);
-    if (!isNaN(num) && num >= 8 && num <= 200) {
-      quill.format("size", `${num}px`);
-      quill.focus();
+    if (isNaN(num) || num < 8 || num > 200) return;
+    const value = `${num}px`;
+    // getSelection(true) = 툴바와 동일: 에디터 포커스 + savedRange 복원 후 선택 반환
+    let range = (quill as any).getSelection(true);
+    if (!range && lastSelectionRef.current) {
+      const { index, length } = lastSelectionRef.current;
+      if (index >= 0 && length >= 0) range = { index, length };
     }
+    if (range && range.length > 0) {
+      (quill as any).formatText(range.index, range.length, "fontSize", value, "user");
+      quill.setSelection(range.index, range.length);
+    } else if (range) {
+      (quill as any).format("fontSize", value, "user");
+    } else {
+      (quill as any).format("fontSize", value, "user");
+    }
+    quill.focus();
   };
 
   // ReactQuill이 마운트된 후 content 설정 및 quillInstanceRef 업데이트
@@ -244,6 +270,13 @@ export default function EditableContent({
           const quill = quillElement.__quill || (quillElement as any).quill;
           if (quill) {
             quillInstanceRef.current = quill;
+            // 드래그로 선택한 영역 저장 → 글자 크기 '적용' 버튼 클릭 시 사용 (selection-change: newRange, oldRange, source)
+            const onSelectionChange = (a: { index: number; length: number } | null, b: unknown) => {
+              const range = a ?? (typeof b === "object" && b && "index" in b && "length" in b ? (b as { index: number; length: number }) : null);
+              if (range && range.length > 0) lastSelectionRef.current = { index: range.index, length: range.length };
+            };
+            selectionChangeHandlerRef.current = onSelectionChange;
+            quill.on("selection-change", onSelectionChange);
             const contentToSet = sanitizeHTML(displayContent || defaultValue);
             const targetContent = contentToSet.trim();
             if (targetContent === '' || targetContent === '<p><br></p>') return;
@@ -264,9 +297,17 @@ export default function EditableContent({
           }
         }
       }, 150);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        const q = quillInstanceRef.current;
+        const handler = selectionChangeHandlerRef.current;
+        if (q && handler) {
+          try { q.off("selection-change", handler); } catch (_) {}
+        }
+        quillInstanceRef.current = null;
+        selectionChangeHandlerRef.current = null;
+      };
     } else {
-      // 편집 모드가 아닐 때 ref 초기화
       quillInstanceRef.current = null;
     }
   }, [isEditing, quillKey, displayContent, defaultValue]);
@@ -327,12 +368,15 @@ export default function EditableContent({
             }
             .ql-toolbar {
               padding: 8px;
-              border-top-left-radius: 4px;
-              border-top-right-radius: 4px;
+              border-top-left-radius: 0;
+              border-top-right-radius: 0;
               border-bottom: 1px solid #ccc;
             }
             .ql-toolbar .ql-formats {
               margin-right: 8px;
+            }
+            .quill-wrapper .ql-container {
+              border-top: none;
             }
             .quill-wrapper .ql-container {
               display: block;
@@ -345,6 +389,62 @@ export default function EditableContent({
             <div className="min-h-[150px] flex items-center justify-center text-gray-500">로딩 중...</div>
           ) : (
             <>
+              <div id={toolbarId} className="quill-toolbar-wrapper flex flex-wrap items-center gap-0 border border-gray-200 rounded-t">
+                <span className="ql-formats">
+                  <select className="ql-header" defaultValue="">
+                    <option value="1">제목 1</option>
+                    <option value="2">제목 2</option>
+                    <option value="3">제목 3</option>
+                    <option value="">본문</option>
+                  </select>
+                </span>
+                <span className="ql-formats">
+                  <button type="button" className="ql-bold" />
+                  <button type="button" className="ql-italic" />
+                  <button type="button" className="ql-underline" />
+                  <button type="button" className="ql-strike" />
+                </span>
+                <span className="ql-formats">
+                  <button type="button" className="ql-list" value="ordered" />
+                  <button type="button" className="ql-list" value="bullet" />
+                </span>
+                <span className="ql-formats">
+                  <button type="button" className="ql-link" />
+                  <button type="button" className="ql-image" />
+                </span>
+                <span className="ql-formats">
+                  <select className="ql-align" defaultValue="">
+                    <option value="" />
+                    <option value="center" />
+                    <option value="right" />
+                    <option value="justify" />
+                  </select>
+                </span>
+                <span className="ql-formats">
+                  <button type="button" className="ql-clean" />
+                </span>
+                <span className="ql-formats flex items-center gap-1.5 ml-1 pl-2 border-l border-gray-300">
+                  <label className="text-xs text-gray-600 whitespace-nowrap">글자(px):</label>
+                  <input
+                    ref={fontSizeInputRef}
+                    type="number"
+                    min={8}
+                    max={200}
+                    defaultValue={14}
+                    className="w-14 px-1.5 py-0.5 text-xs border border-gray-300 rounded"
+                    onKeyDown={(e) => e.key === "Enter" && applyFontSize()}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onMouseDown={(e) => applyFontSize(e)}
+                    className="px-1.5 py-0.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    title="선택한 글자에 글자 크기 적용"
+                  >
+                    적용
+                  </button>
+                </span>
+              </div>
               <div ref={quillRef} className="quill-wrapper">
                 <ReactQuill
                   key={`quill-${contentKey}-${quillKey}`}
@@ -354,28 +454,10 @@ export default function EditableContent({
                     // onChange는 사용하지 않고, 저장 시에만 ref를 통해 가져옴
                   }}
                   modules={modules}
+                  formats={quillFormats}
                   className="bg-white"
                   placeholder="내용을 입력하세요..."
                 />
-              </div>
-              <div className="flex items-center gap-2 mt-2 py-2 border-t border-gray-200">
-                <label className="text-sm text-gray-600 whitespace-nowrap">글자 크기(px):</label>
-                <input
-                  ref={fontSizeInputRef}
-                  type="number"
-                  min={8}
-                  max={200}
-                  defaultValue={14}
-                  className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
-                  onKeyDown={(e) => e.key === "Enter" && applyFontSize()}
-                />
-                <button
-                  type="button"
-                  onClick={applyFontSize}
-                  className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  적용
-                </button>
               </div>
             </>
           )}

@@ -180,12 +180,19 @@ export default function GalleryPage() {
           const parsed = JSON.parse(data.gallery);
           // 업로드 경로가 /uploads/ 만 있으면 basePath 붙여서 NAS·Vercel에서 로드되도록
           const basePath = getApiBase();
-          const normalized = parsed.map((item: { image?: string; [k: string]: unknown }) => ({
-            ...item,
-            image: item.image?.startsWith("/uploads/") && !item.image.startsWith("/agem_homepage")
+          const loadTime = Date.now();
+          const normalized = parsed.map((item: { image?: string; [k: string]: unknown }) => {
+            let img = item.image?.startsWith("/uploads/") && !item.image.startsWith("/agem_homepage")
               ? `${basePath}/uploads/${item.image.replace(/^\/uploads\//, "")}`
-              : item.image,
-          }));
+              : item.image;
+            if (img && typeof img === "string" && img.includes("/uploads/") && !img.includes("/api/uploads/")) {
+              img = img.replace(/\/uploads\//, "/api/uploads/");
+            }
+            if (img && typeof img === "string" && img.includes("/uploads/")) {
+              img = img.includes("?") ? `${img}&_=${loadTime}` : `${img}?_=${loadTime}`;
+            }
+            return { ...item, image: img };
+          });
           setGalleryItems(normalized);
         } catch (e) {
           console.error("Failed to parse gallery data");
@@ -251,15 +258,15 @@ export default function GalleryPage() {
   };
 
   const handleAddGallery = async () => {
-    const maxNumber = galleryItems.length > 0 ? Math.max(...galleryItems.map(g => g.number)) : 0;
+    const minNumber = galleryItems.length > 0 ? Math.min(...galleryItems.map(g => g.number)) : 0;
     const newGallery = {
       id: `gallery-${Date.now()}`,
-      number: maxNumber + 1,
+      number: minNumber - 1,
       title: "New Gallery Item",
       titleKo: "새 갤러리 항목",
       image: "/images/gallery/new-gallery.jpg",
     };
-    const updatedGallery = [newGallery, ...galleryItems].sort((a, b) => b.number - a.number);
+    const updatedGallery = [newGallery, ...galleryItems];
     setGalleryItems(updatedGallery);
     
     const response = await fetch(`${getApiBase()}/api/content`, {
@@ -386,7 +393,7 @@ export default function GalleryPage() {
                         fill
                         className="object-contain"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        unoptimized={item.image?.includes("/uploads/")}
+                        unoptimized={item.image?.includes("/uploads/") || item.image?.includes("/api/uploads/")}
                         onError={() => {
                           // 이미지 로드 실패 시 플레이스홀더 표시
                         }}

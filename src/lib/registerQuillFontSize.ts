@@ -1,7 +1,7 @@
 /**
  * Quill 에디터에서 글자 크기를 숫자(px)로 자유롭게 지정할 수 있도록
- * 기본 size attributor를 whitelist 없이 재등록합니다.
- * EditableContent에서 편집 모드 진입 전에 호출해야 합니다.
+ * 'fontSize' 포맷을 새로 등록합니다. (기본 size는 Class라 24px 등이 무시되므로 분리)
+ * DOM에는 style="font-size: Npx" 로 저장됩니다.
  */
 export function registerQuillFontSize(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
@@ -15,9 +15,9 @@ export function registerQuillFontSize(): Promise<void> {
       Scope: { INLINE: number };
     };
     if (!Parchment?.Attributor?.Style) return;
-    const FontSizeStyle = new Parchment.Attributor.Style("size", "font-size", {
+    const FontSizeStyle = new Parchment.Attributor.Style("fontSize", "font-size", {
       scope: Parchment.Scope.INLINE,
     });
-    Quill.register({ "attributors/style/size": FontSizeStyle }, true);
+    Quill.register({ "attributors/style/fontSize": FontSizeStyle }, true);
   });
 }

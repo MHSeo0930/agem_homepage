@@ -36,15 +36,21 @@ export default function EditableImage({
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    // 방금 업로드한 URL이 있는데 부모 쪽 src가 아직 예전 값이면 덮어쓰지 않음 → 즉시 반영 유지
+    const nextSrc = src ?? "";
     if (justUploadedUrlRef.current !== null) {
-      if (src === justUploadedUrlRef.current) {
-        justUploadedUrlRef.current = null;
-      } else {
+      const refUrl = justUploadedUrlRef.current;
+      const refPath = refUrl.split("?")[0];
+      const srcPath = nextSrc.split("?")[0];
+      if (refPath !== srcPath) {
         return;
       }
+      setImageSrc(refUrl);
+      justUploadedUrlRef.current = null;
+      setImageError(false);
+      setImageLoaded(false);
+      return;
     }
-    setImageSrc(src);
+    setImageSrc(nextSrc);
     setImageError(false);
     setImageLoaded(false);
   }, [src]);
@@ -107,7 +113,7 @@ export default function EditableImage({
   // 갤러리/멤버/업로드 이미지 구분 (basePath 포함 경로 포함)
   const isGalleryImage = imageSrc && imageSrc.includes("/images/gallery/");
   const isMemberImage = imageSrc && (imageSrc.includes("/images/members/") || imageSrc.includes("/images/alumni/"));
-  const isUploadImage = imageSrc && (imageSrc.includes("/uploads/") || imageSrc.includes("/agem_homepage/uploads/"));
+  const isUploadImage = imageSrc && (imageSrc.includes("/uploads/") || imageSrc.includes("/api/uploads/") || imageSrc.includes("/agem_homepage/uploads/"));
   const isPngImage = imageSrc && imageSrc.toLowerCase().endsWith('.png');
   const showPlaceholder = !imageSrc || imageSrc === "" || imageError || (isMemberImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i)) || (isGalleryImage && !imageSrc.match(/\.(jpg|jpeg|png|gif|webp)$/i));
   // 브라우저에서 상대 경로를 절대 URL로 (basePath/다른 도메인에서 로드 안 되는 경우 방지)

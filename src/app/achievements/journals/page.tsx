@@ -166,6 +166,7 @@ export default function JournalsPage() {
   });
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
   const [excelData, setExcelData] = useState<any[]>([]); // 엑셀 데이터
+  const [showJournalTable, setShowJournalTable] = useState(false); // 로그인 시 저널 이름 표 기본 숨김, 버튼으로 표시
 
   const loadData = async () => {
     try {
@@ -660,9 +661,17 @@ export default function JournalsPage() {
                   >
                     📥 엑셀 파일 다운로드
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowJournalTable((v) => !v)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm font-medium"
+                  >
+                    {showJournalTable ? "📋 저널 이름 표 숨기기" : "📋 저널 이름 표 보기"}
+                  </button>
                 </div>
               </div>
               
+              {showJournalTable && (
               <ExcelEditor
                 data={excelData}
                 onDataChange={setExcelData}
@@ -688,6 +697,7 @@ export default function JournalsPage() {
                   }
                 }}
               />
+              )}
             </div>
           </div>
         </section>
@@ -770,17 +780,54 @@ export default function JournalsPage() {
                     </button>
                   )}
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-blue-600">#{pub.number}</span>
-                      {pub.role && (
-                        <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-                          {pub.role}
-                        </span>
-                      )}
-                      {pub.status === "submitted" && (
-                        <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                          Submitted
-                        </span>
+                      {authenticated ? (
+                        <>
+                          <select
+                            value={pub.role ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value || undefined;
+                              handleSave(pub.number, "role", v ?? "");
+                              setPublications(publications.map((p) =>
+                                p.number === pub.number ? { ...p, role: v || undefined } : p
+                              ));
+                            }}
+                            className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500"
+                          >
+                            <option value="">Co-Author</option>
+                            <option value="Corresponding">Corresponding</option>
+                            <option value="First Author">First Author</option>
+                            <option value="Co-First Author">Co-First Author</option>
+                          </select>
+                          <select
+                            value={pub.status ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value || undefined;
+                              handleSave(pub.number, "status", v ?? "");
+                              setPublications(publications.map((p) =>
+                                p.number === pub.number ? { ...p, status: v || undefined } : p
+                              ));
+                            }}
+                            className="text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-1 focus:ring-1 focus:ring-orange-500"
+                          >
+                            <option value="">게재됨</option>
+                            <option value="submitted">Submitted</option>
+                          </select>
+                        </>
+                      ) : (
+                        <>
+                          {pub.role && (
+                            <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                              {pub.role}
+                            </span>
+                          )}
+                          {pub.status === "submitted" && (
+                            <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                              Submitted
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                     {pub.specialNote && (

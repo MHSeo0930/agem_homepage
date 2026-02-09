@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
         access: 'public',
         addRandomSuffix: false,
       });
+      const url = blob.url + (blob.url.includes('?') ? '&' : '?') + `t=${timestamp}`;
       return NextResponse.json({
         success: true,
-        url: blob.url,
+        url,
       });
     }
 
@@ -74,8 +75,9 @@ export async function POST(request: NextRequest) {
     await writeFile(filepath, buffer);
 
     const basePath = process.env.NEXT_PUBLIC_BASEPATH || '/agem_homepage';
-    // 캐시 방지: 새 파일이 브라우저/서버에 404로 캐시되는 것 방지 → 업로드 직후 반영
-    const urlPath = `${basePath.replace(/\/$/, '')}/uploads/${safeFilename}?t=${timestamp}`;
+    const base = basePath.replace(/\/$/, '');
+    // API로 서빙 → 디스크에서 직접 읽어 재시작 없이 즉시 반영 (NAS 등)
+    const urlPath = `${base}/api/uploads/${safeFilename}?t=${timestamp}`;
 
     return NextResponse.json({
       success: true,
