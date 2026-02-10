@@ -152,9 +152,9 @@ export default function GreenEnergyMaterialsPage() {
 
   return (
     <div className="flex flex-col">
-      <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-0">
             {isDataLoaded && (
               <EditableContent
                 contentKey="green-energy-materials-title"

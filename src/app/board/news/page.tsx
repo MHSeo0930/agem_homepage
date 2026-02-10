@@ -380,6 +380,15 @@ export default function NewsPage() {
     await loadData();
   };
 
+  const CATEGORY_OPTIONS: { value: string; label: string; labelKo: string }[] = [
+    { value: "Announcement", label: "News", labelKo: "공지" },
+    { value: "Award", label: "Award", labelKo: "수상" },
+    { value: "Publication", label: "Publication", labelKo: "논문" },
+    { value: "Project", label: "Project", labelKo: "과제" },
+    { value: "Media", label: "Media", labelKo: "언론보도" },
+    { value: "Recruitment", label: "Recruitment", labelKo: "모집" },
+  ];
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Award":
@@ -392,6 +401,8 @@ export default function NewsPage() {
         return "bg-orange-100 text-orange-700";
       case "Recruitment":
         return "bg-indigo-100 text-indigo-700";
+      case "Announcement":
+        return "bg-gray-100 text-gray-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -399,9 +410,9 @@ export default function NewsPage() {
 
   return (
     <div className="flex flex-col">
-      <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-0">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               News & Updates
               <span className="block text-3xl md:text-4xl text-gray-600 font-normal mt-2">
@@ -451,10 +462,38 @@ export default function NewsPage() {
                     <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-blue-600">#{item.number}</span>
-                        <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
-                          {item.category}
-                          <span className="ml-1 text-gray-600">({item.categoryKo})</span>
-                        </span>
+                        {authenticated ? (
+                          <select
+                            value={item.category || "Announcement"}
+                            onChange={async (e) => {
+                              const opt = CATEGORY_OPTIONS.find((o) => o.value === e.target.value);
+                              if (!opt) return;
+                              const updatedNews = newsItems.map((n) =>
+                                n.id === item.id ? { ...n, category: opt.value, categoryKo: opt.labelKo } : n
+                              );
+                              setNewsItems(updatedNews);
+                              const response = await fetch(`${getApiBase()}/api/content`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                credentials: "include",
+                                body: JSON.stringify({ news: JSON.stringify(updatedNews) }),
+                              });
+                              if (!response.ok) setNewsItems(newsItems);
+                            }}
+                            className={`text-xs font-semibold rounded-full px-3 py-1 border cursor-pointer ${getCategoryColor(item.category)}`}
+                          >
+                            {CATEGORY_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label} ({opt.labelKo})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${getCategoryColor(item.category)}`}>
+                            {item.category}
+                            <span className="ml-1 text-gray-600">({item.categoryKo})</span>
+                          </span>
+                        )}
                       </div>
                       {authenticated ? (
                         <EditableContent

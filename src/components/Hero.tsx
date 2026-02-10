@@ -46,11 +46,11 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-16 md:py-24 border-b border-gray-200">
+    <section className="relative w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 md:py-20 border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* 연구실 이름 - 가장 위에 강조 */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-0">
             <EditableContent
               contentKey="hero"
               defaultValue={labName}

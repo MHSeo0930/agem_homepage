@@ -19,49 +19,59 @@ export default function Publications() {
   };
   
   const [publicationsData, setPublicationsData] = useState(initialPublicationsData);
-  const [allPublications] = useState(publications);
+  const [allPublications, setAllPublications] = useState(publications);
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
 
   const loadData = async () => {
     try {
       const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
+
+      // 논문 목록: 저널 페이지와 동기화 (journalPublications 배열)
+      if (data.journalPublications) {
+        try {
+          const parsed = JSON.parse(data.journalPublications);
+          if (Array.isArray(parsed)) {
+            setAllPublications(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to parse journalPublications", e);
+        }
+      }
+
+      // Selected Publications 설정(제목, 설명, selectedNumbers)
       if (data.publications) {
         try {
           const parsed = JSON.parse(data.publications);
-          
-          // 서버에서 가져온 데이터로 업데이트
-          // 빈 문자열이나 undefined인 필드는 이전 값을 유지
-          // 서버에 빈 문자열이 저장되어 있으면 현재 상태를 유지 (덮어쓰지 않음)
-          setPublicationsData(prev => {
-            // 서버에서 가져온 값이 빈 문자열이면 현재 상태 유지
-            const serverDescriptionKo = parsed.descriptionKo && parsed.descriptionKo.trim();
-            const serverTitle = parsed.title && parsed.title.trim();
-            const serverTitleKo = parsed.titleKo && parsed.titleKo.trim();
-            const serverDescription = parsed.description && parsed.description.trim();
-            
-            return {
-              ...prev,
-              ...parsed,
-              // 서버 값이 빈 문자열이면 현재 상태 유지, 아니면 서버 값 사용
-              title: serverTitle ? serverTitle : prev.title,
-              titleKo: serverTitleKo ? serverTitleKo : prev.titleKo,
-              description: serverDescription ? serverDescription : prev.description,
-              descriptionKo: serverDescriptionKo ? serverDescriptionKo : prev.descriptionKo,
-              selectedNumbers: parsed.selectedNumbers || prev.selectedNumbers,
-            };
-          });
-          setIsDataLoaded(true); // 데이터 로드 완료
+          // publications는 Selected Publications 설정(제목, 설명, selectedNumbers)용 객체
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            setPublicationsData(prev => {
+              const serverDescriptionKo = parsed.descriptionKo && parsed.descriptionKo.trim();
+              const serverTitle = parsed.title && parsed.title.trim();
+              const serverTitleKo = parsed.titleKo && parsed.titleKo.trim();
+              const serverDescription = parsed.description && parsed.description.trim();
+              return {
+                ...prev,
+                ...parsed,
+                title: serverTitle ? serverTitle : prev.title,
+                titleKo: serverTitleKo ? serverTitleKo : prev.titleKo,
+                description: serverDescription ? serverDescription : prev.description,
+                descriptionKo: serverDescriptionKo ? serverDescriptionKo : prev.descriptionKo,
+                selectedNumbers: parsed.selectedNumbers || prev.selectedNumbers,
+              };
+            });
+          }
+          setIsDataLoaded(true);
         } catch (e) {
           console.error("Failed to parse publications data", e);
-          setIsDataLoaded(true); // 에러가 발생해도 로드 완료로 표시
+          setIsDataLoaded(true);
         }
       } else {
-        setIsDataLoaded(true); // 데이터가 없어도 로드 완료로 표시
+        setIsDataLoaded(true);
       }
     } catch (error) {
       console.error("Failed to load publications data", error);
-      setIsDataLoaded(true); // 에러가 발생해도 로드 완료로 표시
+      setIsDataLoaded(true);
     }
   };
 

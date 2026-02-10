@@ -172,12 +172,14 @@ export default function JournalsPage() {
     try {
       const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
+      const normalizeStatus = (status: string | undefined) =>
+          status === "게재됨" ? "published" : status;
       if (data.journalPublications) {
         try {
           const parsed = JSON.parse(data.journalPublications);
           // 배열인지 확인
           if (Array.isArray(parsed)) {
-            setPublications(parsed);
+            setPublications(parsed.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
           }
         } catch (e) {
           console.error("Failed to parse journal publications data");
@@ -188,7 +190,7 @@ export default function JournalsPage() {
           const parsed = JSON.parse(data.publications);
           // 배열인 경우에만 사용 (Publications 컴포넌트는 객체를 저장하므로 제외)
           if (Array.isArray(parsed)) {
-            setPublications(parsed);
+            setPublications(parsed.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
           }
         } catch (e) {
           console.error("Failed to parse publications data");
@@ -253,6 +255,32 @@ export default function JournalsPage() {
     }
   }, [authenticated]);
 
+  // 엑셀 저널 테이블에서 저널명 → IF, JCR 매핑 (논문 저장 시 자동 반영용)
+  const journalMapFromExcel = useMemo(() => {
+    const map = new Map<string, { if?: number; jcrRanking?: string }>();
+    (excelData || []).forEach((row: Record<string, unknown>) => {
+      const journalName = (row["Journal Name"] ?? row["저널 이름"]) as string;
+      if (journalName && String(journalName).trim()) {
+        const ifVal = row["IF"] ?? row["Impact Factor"];
+        const jcrVal = row["JCR %"] ?? row["JCR Ranking"] ?? row["JCR%"];
+        const ifNum = ifVal !== undefined && ifVal !== null && ifVal !== "" ? parseFloat(String(ifVal)) : undefined;
+        map.set(String(journalName).trim(), {
+          if: ifNum !== undefined && !isNaN(ifNum) ? ifNum : undefined,
+          jcrRanking: jcrVal !== undefined && jcrVal !== null && jcrVal !== "" ? String(jcrVal) : undefined,
+        });
+      }
+    });
+    return map;
+  }, [excelData]);
+
+  // 셀렉트용 저널 이름 목록: Submitted 맨 위, 나머지 엑셀 기준 정렬
+  const excelJournalNames = useMemo(() => {
+    const fromExcel = Array.from(journalMapFromExcel.keys())
+      .filter((j) => j.toLowerCase() !== "submitted")
+      .sort((a, b) => a.localeCompare(b));
+    return ["submitted", ...fromExcel];
+  }, [journalMapFromExcel]);
+
   const handleSave = async (pubNumber: number, field: string, value: string | number) => {
     // 배열이 아닌 경우 처리
     if (!Array.isArray(publications)) {
@@ -260,7 +288,7 @@ export default function JournalsPage() {
       return;
     }
     
-    const updatedPublications = publications.map((pub) => {
+    let updatedPublications = publications.map((pub) => {
       if (pub.number === pubNumber) {
         // 빈 문자열인 경우 필드 제거
         if (value === "" || value === null || value === undefined) {
@@ -274,6 +302,21 @@ export default function JournalsPage() {
       }
       return pub;
     });
+
+    // 저널명이 있으면 엑셀 테이블에서 IF/JCR 자동 반영 (저널 변경 또는 상태 변경 시)
+    const updatedPub = updatedPublications.find((p) => p.number === pubNumber);
+    const journalName = updatedPub?.journal?.trim();
+    if (journalName && journalMapFromExcel.has(journalName)) {
+      const info = journalMapFromExcel.get(journalName)!;
+      updatedPublications = updatedPublications.map((pub) => {
+        if (pub.number !== pubNumber) return pub;
+        const next = { ...pub };
+        if (info.if !== undefined) next.if = info.if;
+        if (info.jcrRanking !== undefined) next.jcrRanking = info.jcrRanking;
+        return next;
+      });
+    }
+
     setPublications(updatedPublications);
     
     const response = await fetch(`${getApiBase()}/api/content`, {
@@ -363,9 +406,9 @@ export default function JournalsPage() {
 
   return (
     <div className="flex flex-col">
-      <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-0">
             {isDataLoaded && (
               <EditableContent
                 contentKey="journals-page-title"
@@ -580,7 +623,8 @@ export default function JournalsPage() {
                         alert("초기화 중 오류가 발생했습니다.");
                       }
                     }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                    className="hidden px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                    aria-hidden
                   >
                     🗑️ 데이터 초기화
                   </button>
@@ -827,7 +871,7 @@ export default function JournalsPage() {
                           )}
                           {pub.status && (
                             <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                              {pub.status === "submitted" ? "Submitted" : pub.status === "accepted" ? "Accepted" : pub.status === "in press" ? "in press" : pub.status === "published" ? "Published" : pub.status}
+                              {pub.status === "submitted" ? "Submitted" : pub.status === "accepted" ? "Accepted" : pub.status === "in press" ? "in press" : pub.status === "published" || pub.status === "게재됨" ? "Published" : pub.status}
                             </span>
                           )}
                         </>
@@ -897,6 +941,32 @@ export default function JournalsPage() {
                       }}
                       isAuthenticated={authenticated}
                     />
+                    {authenticated && excelJournalNames.length > 0 && (
+                      <select
+                        value=""
+                        onChange={async (e) => {
+                          const selected = e.target.value;
+                          if (!selected) return;
+                          await handleSave(pub.number, "journal", selected);
+                          const updatedPublications = publications.map((p) =>
+                            p.number === pub.number ? { ...p, journal: selected } : p
+                          );
+                          setPublications(updatedPublications);
+                          // 선택 후 다시 placeholder 로 되돌리기
+                          e.currentTarget.value = "";
+                        }}
+                        className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+                      >
+                        <option value="">
+                          엑셀 저널 선택
+                        </option>
+                        {excelJournalNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name === "submitted" ? "Submitted" : name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <EditableContent
                       contentKey={`pub-${pub.number}-year`}
                       defaultValue={`<span>(${pub.year})</span>`}
@@ -933,7 +1003,6 @@ export default function JournalsPage() {
                             );
                             setPublications(updatedPublications);
                           } else {
-                            // IF 제거
                             await handleSave(pub.number, "if", "");
                           }
                         }}
@@ -957,7 +1026,6 @@ export default function JournalsPage() {
                             );
                             setPublications(updatedPublications);
                           } else {
-                            // JCR 제거
                             await handleSave(pub.number, "jcrRanking", "");
                           }
                         }}

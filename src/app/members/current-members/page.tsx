@@ -253,9 +253,9 @@ export default function CurrentMembersPage() {
 
   return (
     <div className="flex flex-col">
-      <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-0">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Current Members
               <span className="block text-3xl md:text-4xl text-gray-600 font-normal mt-2">
