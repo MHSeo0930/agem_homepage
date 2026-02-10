@@ -157,6 +157,8 @@ function ExcelEditor({ data, onDataChange, onSave }: { data: any[]; onDataChange
 
 export default function JournalsPage() {
   const { authenticated } = useAuth();
+  const [draggedPubNumber, setDraggedPubNumber] = useState<number | null>(null);
+  const [dragOverPubNumber, setDragOverPubNumber] = useState<number | null>(null);
   const [publications, setPublications] = useState(initialPublications);
   const [pageData, setPageData] = useState({
     title: "Journal Publications",
@@ -387,6 +389,32 @@ export default function JournalsPage() {
     if (!response.ok) throw new Error("Failed to delete publication");
     
     // 저장 후 데이터 다시 로드
+    await loadData();
+  };
+
+  const handleReorder = async (fromNumber: number, toNumber: number) => {
+    if (fromNumber === toNumber) return;
+    if (!Array.isArray(publications)) return;
+    const sorted = [...publications].sort((a, b) => b.number - a.number);
+    const fromIndex = sorted.findIndex((p) => p.number === fromNumber);
+    const toIndex = sorted.findIndex((p) => p.number === toNumber);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const reordered = [...sorted];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, removed);
+    const total = reordered.length;
+    const withNewNumbers = reordered.map((p, i) => ({ ...p, number: total - i }));
+    setPublications(withNewNumbers);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ journalPublications: JSON.stringify(withNewNumbers) }),
+    });
+    if (!response.ok) {
+      setPublications(publications);
+      throw new Error("Failed to save order");
+    }
     await loadData();
   };
 
@@ -809,10 +837,35 @@ export default function JournalsPage() {
               </div>
             )}
             <div className="space-y-6">
-              {Array.isArray(publications) ? publications.sort((a, b) => b.number - a.number).map((pub) => (
+              {Array.isArray(publications) ? publications.sort((a, b) => b.number - a.number).map((pub) => {
+                const isDragging = authenticated && draggedPubNumber === pub.number;
+                const isDragOver = authenticated && dragOverPubNumber === pub.number && draggedPubNumber !== pub.number;
+                return (
                 <div
                   key={pub.number}
-                  className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group"
+                  draggable={authenticated}
+                  onDragStart={() => authenticated && setDraggedPubNumber(pub.number)}
+                  onDragOver={(e) => {
+                    if (!authenticated) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverPubNumber(pub.number);
+                  }}
+                  onDragLeave={() => setDragOverPubNumber((n) => (n === pub.number ? null : n))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!authenticated || draggedPubNumber == null || draggedPubNumber === pub.number) return;
+                    setDragOverPubNumber(null);
+                    handleReorder(draggedPubNumber, pub.number);
+                    setDraggedPubNumber(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedPubNumber(null);
+                    setDragOverPubNumber(null);
+                  }}
+                  className={`bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group ${
+                    isDragging ? "opacity-50 scale-95" : ""
+                  } ${isDragOver ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${authenticated ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   {authenticated && (
                     <button
@@ -1033,8 +1086,46 @@ export default function JournalsPage() {
                       />
                     ) : null}
                   </div>
+                  {/* 서지 정보: 붙여넣은 텍스트 그대로 한 줄로 표시·편집 */}
+                  <div className="text-sm text-gray-500 mb-2">
+                    {(authenticated || (pub as { citation?: string }).citation || (pub as { volume?: string }).volume || (pub as { issue?: string }).issue || (pub as { pages?: string }).pages || (pub as { doi?: string }).doi) && (
+                      (() => {
+                        const c = (pub as { citation?: string }).citation;
+                        const v = (pub as { volume?: string }).volume;
+                        const i = (pub as { issue?: string }).issue;
+                        const p = (pub as { pages?: string }).pages;
+                        const d = (pub as { doi?: string }).doi;
+                        const displayText = c?.trim() || (v || i || p || d
+                          ? [v && `Vol. ${v}`, i && `No. ${i}`, p && `pp. ${p}`, d && (d.startsWith("http") ? d : `https://doi.org/${d}`)].filter(Boolean).join(", ")
+                          : "");
+                        if (authenticated) {
+                          return (
+                            <input
+                              type="text"
+                              defaultValue={displayText}
+                              placeholder="서지 정보 한 줄 (Vol, No, pp, DOI 등 붙여넣기)"
+                              className="w-full text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                              onBlur={async (e) => {
+                                const text = e.target.value.trim();
+                                if (text === displayText) return;
+                                await handleSave(pub.number, "citation", text);
+                                setPublications(publications.map((p) =>
+                                  p.number === pub.number ? { ...p, citation: text } as typeof pub : p
+                                ));
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                              }}
+                            />
+                          );
+                        }
+                        return <span className="text-gray-600">{displayText || "—"}</span>;
+                      })()
+                    )}
+                  </div>
                 </div>
-              )) : (
+              );
+              }) : (
                 <div className="text-center text-gray-500 py-8">
                   논문 데이터를 불러오는 중...
                 </div>

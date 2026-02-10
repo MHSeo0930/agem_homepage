@@ -8,6 +8,8 @@ import EditableImage from "@/components/EditableImage";
 
 export default function CurrentMembersPage() {
   const { authenticated } = useAuth();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [members, setMembers] = useState([
     {
       id: "minseon-park",
@@ -251,6 +253,77 @@ export default function CurrentMembersPage() {
     await loadData();
   };
 
+  const handleMoveToAlumni = async (memberId: string) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
+    if (!confirm(`${member.nameKo}( ${member.name} ) 님을 졸업생(Alumni)으로 이동하시겠습니까?`)) return;
+
+    const res = await fetch(`${getApiBase()}/api/content`);
+    const data = await res.json();
+    let currentAlumni: Array<Record<string, unknown>> = [];
+    if (data.alumni) {
+      try {
+        currentAlumni = JSON.parse(data.alumni);
+      } catch (e) {
+        console.error("Failed to parse alumni", e);
+      }
+    }
+
+    const newAlumnus = {
+      id: `alumnus-${Date.now()}`,
+      name: member.name,
+      nameKo: member.nameKo,
+      position: member.position,
+      positionKo: member.positionKo,
+      currentPosition: "—",
+      currentPositionKo: "—",
+      email: member.email,
+      tel: member.tel ?? "--",
+      image: member.image,
+    };
+
+    const updatedMembers = members.filter((m) => m.id !== memberId);
+    const updatedAlumni = [newAlumnus, ...currentAlumni];
+
+    setMembers(updatedMembers);
+
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        members: JSON.stringify(updatedMembers),
+        alumni: JSON.stringify(updatedAlumni),
+      }),
+    });
+    if (!response.ok) {
+      setMembers(members);
+      throw new Error("Failed to move to alumni");
+    }
+    await loadData();
+  };
+
+  const handleReorder = async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const fromIndex = members.findIndex((m) => m.id === fromId);
+    const toIndex = members.findIndex((m) => m.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const reordered = [...members];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, removed);
+    setMembers(reordered);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ members: JSON.stringify(reordered) }),
+    });
+    if (!response.ok) {
+      setMembers(members);
+      throw new Error("Failed to save order");
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -287,19 +360,56 @@ export default function CurrentMembersPage() {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {members.map((member) => (
+              {members.map((member) => {
+                const isDragging = authenticated && draggedId === member.id;
+                const isDragOver = authenticated && dragOverId === member.id && draggedId !== member.id;
+                return (
                 <div
                   key={member.id}
-                  className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col"
+                  draggable={authenticated}
+                  onDragStart={() => authenticated && setDraggedId(member.id)}
+                  onDragOver={(e) => {
+                    if (!authenticated) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverId(member.id);
+                  }}
+                  onDragLeave={() => setDragOverId((id) => (id === member.id ? null : id))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!authenticated || !draggedId || draggedId === member.id) return;
+                    setDragOverId(null);
+                    handleReorder(draggedId, member.id);
+                    setDraggedId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                  }}
+                  className={`bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col ${
+                    isDragging ? "opacity-50 scale-95" : ""
+                  } ${isDragOver ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${authenticated ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   {authenticated && (
-                    <button
-                      onClick={() => handleDeleteMember(member.id)}
-                      className="absolute top-2 right-2 z-20 bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
-                      title="멤버 삭제"
-                    >
-                      ✕
-                    </button>
+                    <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveToAlumni(member.id);
+                        }}
+                        className="bg-indigo-600 text-white px-2 py-1 rounded text-xs hover:bg-indigo-700 transition-colors"
+                        title="Alumni로 이동"
+                      >
+                        Alumni
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMember(member.id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                        title="멤버 삭제"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                   {/* 사진 편집 가능 */}
                   <div className="relative mb-5 flex justify-center">
@@ -445,7 +555,8 @@ export default function CurrentMembersPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>

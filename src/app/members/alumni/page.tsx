@@ -177,6 +177,57 @@ export default function AlumniPage() {
     await loadData();
   };
 
+  const handleMoveToCurrentMembers = async (alumnusId: string) => {
+    const alumnus = alumni.find((a) => a.id === alumnusId);
+    if (!alumnus) return;
+    if (!confirm(`${alumnus.nameKo}( ${alumnus.name} ) 님을 현재 구성원으로 이동하시겠습니까?`)) return;
+
+    const res = await fetch(`${getApiBase()}/api/content`);
+    const data = await res.json();
+    let currentMembers: Array<Record<string, unknown>> = [];
+    if (data.members) {
+      try {
+        currentMembers = JSON.parse(data.members);
+      } catch (e) {
+        console.error("Failed to parse members", e);
+      }
+    }
+
+    const newMember = {
+      id: `member-${Date.now()}`,
+      name: alumnus.name,
+      nameKo: alumnus.nameKo,
+      position: alumnus.position,
+      positionKo: alumnus.positionKo,
+      affiliation: "PKNU",
+      research: "Energy Conversion Materials/ Computational Chemistry",
+      researchKo: "에너지 전환 소재/ 계산 화학",
+      email: alumnus.email,
+      tel: alumnus.tel ?? "--",
+      image: alumnus.image,
+    };
+
+    const updatedAlumni = alumni.filter((a) => a.id !== alumnusId);
+    const updatedMembers = [newMember, ...currentMembers];
+
+    setAlumni(updatedAlumni);
+
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        members: JSON.stringify(updatedMembers),
+        alumni: JSON.stringify(updatedAlumni),
+      }),
+    });
+    if (!response.ok) {
+      setAlumni(alumni);
+      throw new Error("Failed to move to current members");
+    }
+    await loadData();
+  };
+
   return (
     <div className="flex flex-col">
       <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -219,13 +270,25 @@ export default function AlumniPage() {
                   className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col"
                 >
                   {authenticated && (
-                    <button
-                      onClick={() => handleDeleteAlumnus(alumnus.id)}
-                      className="absolute top-2 right-2 z-20 bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
-                      title="졸업생 삭제"
-                    >
-                      ✕
-                    </button>
+                    <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveToCurrentMembers(alumnus.id);
+                        }}
+                        className="bg-indigo-600 text-white px-2 py-1 rounded text-xs hover:bg-indigo-700 transition-colors"
+                        title="현재 구성원으로 이동"
+                      >
+                        구성원
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAlumnus(alumnus.id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                        title="졸업생 삭제"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                   {/* 사진 편집 가능 */}
                   <div className="relative mb-5 flex justify-center">
