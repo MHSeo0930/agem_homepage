@@ -10,6 +10,8 @@ import Image from "next/image";
 export default function GalleryPage() {
   const { authenticated } = useAuth();
   const [selectedImage, setSelectedImage] = useState<{ src: string; title: string; titleKo: string } | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState([
     // Page 1 (최신)
     {
@@ -299,6 +301,29 @@ export default function GalleryPage() {
     await loadData();
   };
 
+  const handleReorder = async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const sorted = [...galleryItems].sort((a, b) => a.number - b.number);
+    const fromIndex = sorted.findIndex((i) => i.id === fromId);
+    const toIndex = sorted.findIndex((i) => i.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const reordered = [...sorted];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, removed);
+    const withNewNumbers = reordered.map((item, idx) => ({ ...item, number: idx + 1 }));
+    setGalleryItems(withNewNumbers);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ gallery: JSON.stringify(withNewNumbers) }),
+    });
+    if (!response.ok) {
+      setGalleryItems(galleryItems);
+      throw new Error("Failed to save order");
+    }
+  };
+
   const sortedItems = [...galleryItems].sort((a, b) => a.number - b.number);
   const totalItems = galleryItems.length;
 
@@ -344,10 +369,34 @@ export default function GalleryPage() {
               {sortedItems.map((item, index) => {
                 // 아래쪽(마지막) 항목이 #1이 되도록 역순 번호 계산
                 const displayNumber = totalItems - index;
+                const isDragging = authenticated && draggedId === item.id;
+                const isDragOver = authenticated && dragOverId === item.id && draggedId !== item.id;
                 return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden relative group"
+                  draggable={authenticated}
+                  onDragStart={() => authenticated && setDraggedId(item.id)}
+                  onDragOver={(e) => {
+                    if (!authenticated) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverId(item.id);
+                  }}
+                  onDragLeave={() => setDragOverId((id) => (id === item.id ? null : id))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!authenticated || !draggedId || draggedId === item.id) return;
+                    setDragOverId(null);
+                    handleReorder(draggedId, item.id);
+                    setDraggedId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                  }}
+                  className={`bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden relative group ${
+                    isDragging ? "opacity-50 scale-95" : ""
+                  } ${isDragOver ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${authenticated ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   {authenticated && (
                     <button
