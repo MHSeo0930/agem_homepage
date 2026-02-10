@@ -8,6 +8,8 @@ import EditableImage from "@/components/EditableImage";
 
 export default function AlumniPage() {
   const { authenticated } = useAuth();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [alumni, setAlumni] = useState([
     {
       id: "jee-min-hwang",
@@ -228,6 +230,27 @@ export default function AlumniPage() {
     await loadData();
   };
 
+  const handleReorder = async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const fromIndex = alumni.findIndex((a) => a.id === fromId);
+    const toIndex = alumni.findIndex((a) => a.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const reordered = [...alumni];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, removed);
+    setAlumni(reordered);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ alumni: JSON.stringify(reordered) }),
+    });
+    if (!response.ok) {
+      setAlumni(alumni);
+      throw new Error("Failed to save order");
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -264,10 +287,35 @@ export default function AlumniPage() {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {alumni.map((alumnus) => (
+              {alumni.map((alumnus) => {
+                const isDragging = authenticated && draggedId === alumnus.id;
+                const isDragOver = authenticated && dragOverId === alumnus.id && draggedId !== alumnus.id;
+                return (
                 <div
                   key={alumnus.id}
-                  className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col"
+                  draggable={authenticated}
+                  onDragStart={() => authenticated && setDraggedId(alumnus.id)}
+                  onDragOver={(e) => {
+                    if (!authenticated) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverId(alumnus.id);
+                  }}
+                  onDragLeave={() => setDragOverId((id) => (id === alumnus.id ? null : id))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!authenticated || !draggedId || draggedId === alumnus.id) return;
+                    setDragOverId(null);
+                    handleReorder(draggedId, alumnus.id);
+                    setDraggedId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                  }}
+                  className={`bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 relative group flex flex-col ${
+                    isDragging ? "opacity-50 scale-95" : ""
+                  } ${isDragOver ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${authenticated ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   {authenticated && (
                     <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100">
@@ -391,7 +439,8 @@ export default function AlumniPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>
