@@ -239,7 +239,13 @@ export default function Research() {
                     />
                     <div className="mt-2">
                       <a 
-                        href={category?.link || "#"} 
+                        href={(() => {
+                          const raw = category?.link || "#";
+                          if (raw === "#") return raw;
+                          const base = getApiBase();
+                          if (raw.startsWith("/") && !raw.startsWith(base)) return base + raw;
+                          return raw;
+                        })()} 
                         className="text-blue-600 font-medium text-sm group-hover:underline inline-flex items-center"
                         onClick={(e) => {
                           if (authenticated) {

@@ -811,8 +811,11 @@ export default function JournalsPage() {
                             }}
                             className="text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-1 focus:ring-1 focus:ring-orange-500"
                           >
-                            <option value="">게재됨</option>
+                            <option value="">—</option>
                             <option value="submitted">Submitted</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="in press">in press</option>
+                            <option value="published">Published</option>
                           </select>
                         </>
                       ) : (
@@ -822,9 +825,9 @@ export default function JournalsPage() {
                               {pub.role}
                             </span>
                           )}
-                          {pub.status === "submitted" && (
+                          {pub.status && (
                             <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                              Submitted
+                              {pub.status === "submitted" ? "Submitted" : pub.status === "accepted" ? "Accepted" : pub.status === "in press" ? "in press" : pub.status === "published" ? "Published" : pub.status}
                             </span>
                           )}
                         </>
