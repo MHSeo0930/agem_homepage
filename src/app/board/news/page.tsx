@@ -19,6 +19,8 @@ interface NewsItem {
 
 export default function NewsPage() {
   const { authenticated } = useAuth();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([
     {
       id: "news-24",
@@ -380,6 +382,29 @@ export default function NewsPage() {
     await loadData();
   };
 
+  const handleReorder = async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const fromIndex = newsItems.findIndex((n) => n.id === fromId);
+    const toIndex = newsItems.findIndex((n) => n.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const reordered = [...newsItems];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, removed);
+    const total = reordered.length;
+    const withNewNumbers = reordered.map((item, idx) => ({ ...item, number: total - idx }));
+    setNewsItems(withNewNumbers);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ news: JSON.stringify(withNewNumbers) }),
+    });
+    if (!response.ok) {
+      setNewsItems(newsItems);
+      throw new Error("Failed to save order");
+    }
+  };
+
   const CATEGORY_OPTIONS: { value: string; label: string; labelKo: string }[] = [
     { value: "Announcement", label: "News", labelKo: "공지" },
     { value: "Award", label: "Award", labelKo: "수상" },
@@ -444,10 +469,35 @@ export default function NewsPage() {
               </div>
             )}
             <div className="space-y-6">
-              {newsItems.sort((a, b) => b.number - a.number).map((item) => (
+              {newsItems.sort((a, b) => b.number - a.number).map((item) => {
+                const isDragging = authenticated && draggedId === item.id;
+                const isDragOver = authenticated && dragOverId === item.id && draggedId !== item.id;
+                return (
                 <div
                   key={item.id}
-                  className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow relative group"
+                  draggable={authenticated}
+                  onDragStart={() => authenticated && setDraggedId(item.id)}
+                  onDragOver={(e) => {
+                    if (!authenticated) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverId(item.id);
+                  }}
+                  onDragLeave={() => setDragOverId((id) => (id === item.id ? null : id))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!authenticated || !draggedId || draggedId === item.id) return;
+                    setDragOverId(null);
+                    handleReorder(draggedId, item.id);
+                    setDraggedId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                  }}
+                  className={`bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 relative group ${
+                    isDragging ? "opacity-50 scale-[0.98]" : ""
+                  } ${isDragOver ? "ring-2 ring-blue-500 ring-offset-2" : ""} ${authenticated ? "cursor-grab active:cursor-grabbing" : ""}`}
                 >
                   {authenticated && (
                     <button
@@ -537,7 +587,8 @@ export default function NewsPage() {
                     />
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>
