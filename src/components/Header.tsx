@@ -9,6 +9,7 @@ import { getApiBase } from "@/lib/apiBase";
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deploying, setDeploying] = useState(false);
   const { authenticated, loading, checkAuth } = useAuth();
   const router = useRouter();
 
@@ -21,6 +22,24 @@ export default function Header() {
     } catch (error) {
       console.error("Logout failed:", error);
       await checkAuth();
+    }
+  };
+
+  const handleDeploy = async () => {
+    if (deploying) return;
+    setDeploying(true);
+    try {
+      const res = await fetch(`${getApiBase()}/api/deploy`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "배포 시작 실패");
+      alert(data.message || "배포가 백그라운드에서 시작되었습니다.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "배포 시작에 실패했습니다.");
+    } finally {
+      setDeploying(false);
     }
   };
 
@@ -181,16 +200,26 @@ export default function Header() {
             )}
           </div>
 
-          {/* Login/Logout */}
+          {/* Login/Logout / Deploy */}
           {!loading && (
-            <div className="ml-4 pl-4 border-l border-gray-200">
+            <div className="ml-4 pl-4 border-l border-gray-200 flex items-center gap-4">
               {authenticated ? (
-                <button
-                  onClick={handleLogout}
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                >
-                  Logout
-                </button>
+                <>
+                  <button
+                    onClick={handleDeploy}
+                    disabled={deploying}
+                    className="text-sm font-medium text-green-700 hover:text-green-800 disabled:opacity-50 transition-colors"
+                    title="빌드 후 Git 푸시로 배포"
+                  >
+                    {deploying ? "배포 중…" : "배포"}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
                 <Link
                   href="/admin/login"
@@ -334,17 +363,29 @@ export default function Header() {
               </Link>
             </div>
             {!loading && (
-              <div className="pt-3 border-t border-gray-200">
+              <div className="pt-3 border-t border-gray-200 space-y-2">
                 {authenticated ? (
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="block text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors w-full text-left"
-                  >
-                    Logout
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        handleDeploy();
+                        setMobileMenuOpen(false);
+                      }}
+                      disabled={deploying}
+                      className="block text-sm font-medium text-green-700 hover:text-green-800 disabled:opacity-50 transition-colors w-full text-left"
+                    >
+                      {deploying ? "배포 중…" : "배포"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="block text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors w-full text-left"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <Link
                     href="/admin/login"

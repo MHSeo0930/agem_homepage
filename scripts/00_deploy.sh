@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # 1: 로컬 빌드 → 확인 후  2: 배포(푸시)
-# 사용법: ./scripts/00_deploy.sh
+# 사용법: ./scripts/00_deploy.sh [1|2]
+# 인자 없으면 대화형 선택. 인자 1 또는 2면 해당 옵션 실행 (백그라운드 가능).
 
 set -e
 cd "$(dirname "$0")/.."
 
-echo ""
-echo "  [1] 로컬 빌드  — 빌드만 수행 (로컬에서 확인용)"
-echo "  [2] 배포      — 빌드 후 Git 푸시 → GitHub Pages 자동 배포"
-echo ""
-read -p "선택 (1 또는 2): " choice
+if [ -n "$1" ] && [ "$1" = "1" ] || [ "$1" = "2" ]; then
+  choice="$1"
+else
+  echo ""
+  echo "  [1] 로컬 빌드  — 빌드만 수행 (로컬에서 확인용)"
+  echo "  [2] 배포      — 빌드 후 Git 푸시 → GitHub Pages 자동 배포"
+  echo ""
+  read -p "선택 (1 또는 2): " choice
+fi
 
 # 3000 포트 사용 프로세스 종료 (기존 것 끊고 3000 그대로 사용)
 kill_port_3000() {
@@ -63,7 +68,8 @@ case "$choice" in
     fi
     echo "  ================================================"
     echo ""
-    npm run start
+    echo "  백그라운드에서 서버를 시작했습니다. 로그: /tmp/deploy-start.log"
+    nohup npm run start >> /tmp/deploy-start.log 2>&1 &
     ;;
   2)
     echo ""

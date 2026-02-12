@@ -136,13 +136,37 @@ const defaultProfessorData: ProfessorData = {
   ],
 };
 
+/** <br /> / </p><p> / 줄바꿈으로 구분된 두 줄을 파싱 (textContent는 br을 줄바꿈으로 주지 않아 한 줄로 붙음) */
+function parseBrOrNewline(body: HTMLElement): [string, string] {
+  const html = body.innerHTML || "";
+  let rawParts: string[];
+  const byBr = html.split(/<br\s*\/?>/i);
+  if (byBr.length >= 2) {
+    rawParts = byBr;
+  } else {
+    const byP = html.split(/<\/p>\s*<p[^>]*>/i);
+    if (byP.length >= 2) rawParts = byP;
+    else {
+      const byNewline = (byBr[0] || "").split(/\n/).map((s) => s.trim()).filter(Boolean);
+      rawParts = byNewline.length >= 2 ? byNewline : byBr;
+    }
+  }
+  const parts = rawParts.map((raw) => {
+    const div = document.createElement("div");
+    div.innerHTML = raw;
+    return (div.textContent || "").trim();
+  });
+  return [parts[0] || "", parts[1] ?? ""];
+}
+
 export default function ProfessorPage() {
   const { authenticated } = useAuth();
   const [professorData, setProfessorData] = useState<ProfessorData>(defaultProfessorData);
 
-  const loadData = async (refetchAfterSave = false) => {
+  const loadData = async () => {
     try {
-      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      // 캐시 회피: 새로고침/저장 후에도 항상 최신 content.json 반영
+      const url = `${getApiBase()}/api/content?_=${Date.now()}`;
       const res = await fetch(url, { cache: "no-store", credentials: "include" });
       const data = await res.json();
       if (data.professor) {
@@ -162,12 +186,10 @@ export default function ProfessorPage() {
     loadData();
   }, []);
 
+  /** 단일 필드 저장 (다른 게시판과 동일한 방식) */
   const handleSave = async (field: string, value: string | EducationItem[] | CareerItem[] | LinkItem[]) => {
     const updatedData = { ...professorData, [field]: value };
-    
-    // 먼저 상태를 업데이트하여 UI에 즉시 반영
     setProfessorData(updatedData);
-    
     const response = await fetch(`${getApiBase()}/api/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -179,9 +201,24 @@ export default function ProfessorPage() {
       throw new Error("Failed to save");
     }
     if (field === "image") return;
-    setTimeout(async () => {
-      await loadData(false);
-    }, 50);
+    setTimeout(() => loadData(), 400);
+  };
+
+  /** 여러 필드를 한 번에 저장 (연속 handleSave 시 두 번째가 첫 번째를 덮어쓰는 문제 방지) */
+  const handleSavePartial = async (updates: Partial<ProfessorData>) => {
+    const updatedData = { ...professorData, ...updates };
+    setProfessorData(updatedData);
+    const response = await fetch(`${getApiBase()}/api/content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ professor: JSON.stringify(updatedData) }),
+    });
+    if (!response.ok) {
+      setProfessorData(professorData);
+      throw new Error("Failed to save");
+    }
+    setTimeout(() => loadData(), 400);
   };
 
   const handleImageSave = async (imageUrl: string) => {
@@ -251,8 +288,10 @@ export default function ProfessorPage() {
                       const doc = parser.parseFromString(content, "text/html");
                       const text = doc.body.textContent || "";
                       const lines = text.split("\n").map(l => l.trim()).filter(l => l);
-                      await handleSave("name", lines[0] || professorData.name);
-                      if (lines[1]) await handleSave("nameKo", lines[1]);
+                      await handleSavePartial({
+                        name: lines[0] || professorData.name,
+                        nameKo: lines[1] ?? professorData.nameKo,
+                      });
                     }}
                     isAuthenticated={authenticated}
                   />
@@ -282,8 +321,10 @@ export default function ProfessorPage() {
                           const doc = parser.parseFromString(content, "text/html");
                           const text = doc.body.textContent || "";
                           const parts = text.split("/").map(p => p.trim());
-                          if (parts[0]) await handleSave("position", parts[0]);
-                          if (parts[1]) await handleSave("positionKo", parts[1]);
+                          await handleSavePartial({
+                            position: parts[0] || professorData.position,
+                            positionKo: parts[1] ?? professorData.positionKo,
+                          });
                         }}
                         isAuthenticated={authenticated}
                       />
@@ -298,10 +339,11 @@ export default function ProfessorPage() {
                         onSave={async (content) => {
                           const parser = new DOMParser();
                           const doc = parser.parseFromString(content, "text/html");
-                          const text = doc.body.textContent || "";
-                          const lines = text.split("\n").map(l => l.trim()).filter(l => l);
-                          if (lines[0]) await handleSave("department", lines[0]);
-                          if (lines[1]) await handleSave("departmentKo", lines[1]);
+                          const lines = parseBrOrNewline(doc.body);
+                          await handleSavePartial({
+                            department: lines[0] || professorData.department,
+                            departmentKo: lines[1] ?? professorData.departmentKo,
+                          });
                         }}
                         isAuthenticated={authenticated}
                       />
@@ -316,10 +358,11 @@ export default function ProfessorPage() {
                         onSave={async (content) => {
                           const parser = new DOMParser();
                           const doc = parser.parseFromString(content, "text/html");
-                          const text = doc.body.textContent || "";
-                          const lines = text.split("\n").map(l => l.trim()).filter(l => l);
-                          if (lines[0]) await handleSave("institution", lines[0]);
-                          if (lines[1]) await handleSave("institutionKo", lines[1]);
+                          const lines = parseBrOrNewline(doc.body);
+                          await handleSavePartial({
+                            institution: lines[0] || professorData.institution,
+                            institutionKo: lines[1] ?? professorData.institutionKo,
+                          });
                         }}
                         isAuthenticated={authenticated}
                       />
@@ -334,10 +377,11 @@ export default function ProfessorPage() {
                         onSave={async (content) => {
                           const parser = new DOMParser();
                           const doc = parser.parseFromString(content, "text/html");
-                          const text = doc.body.textContent || "";
-                          const lines = text.split("\n").map(l => l.trim()).filter(l => l);
-                          if (lines[0]) await handleSave("office", lines[0]);
-                          if (lines[1]) await handleSave("officeKo", lines[1]);
+                          const lines = parseBrOrNewline(doc.body);
+                          await handleSavePartial({
+                            office: lines[0] || professorData.office,
+                            officeKo: lines[1] ?? professorData.officeKo,
+                          });
                         }}
                         isAuthenticated={authenticated}
                       />
@@ -393,14 +437,10 @@ export default function ProfessorPage() {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(content, "text/html");
                     const paragraphs = doc.querySelectorAll("p");
-                    if (paragraphs[0]) {
-                      const text = paragraphs[0].textContent || "";
-                      await handleSave("researchInterests", text.trim());
-                    }
-                    if (paragraphs[1]) {
-                      const text = paragraphs[1].textContent || "";
-                      await handleSave("researchInterestsKo", text.trim());
-                    }
+                    await handleSavePartial({
+                      researchInterests: paragraphs[0]?.textContent?.trim() ?? professorData.researchInterests,
+                      researchInterestsKo: paragraphs[1]?.textContent?.trim() ?? professorData.researchInterestsKo,
+                    });
                   }}
                   isAuthenticated={authenticated}
                 />
@@ -430,16 +470,20 @@ export default function ProfessorPage() {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(content, "text/html");
                         const paragraphs = doc.querySelectorAll("p");
+                        const updatedEducation = [...professorData.education];
+                        const current = { ...updatedEducation[index] };
                         if (paragraphs[0]) {
                           const text = paragraphs[0].textContent || "";
                           const parts = text.split(",").map(p => p.trim());
-                          if (parts[0]) await handleEducationSave(index, "institution", parts[0]);
-                          if (parts[1]) await handleEducationSave(index, "period", parts[1]);
+                          if (parts[0]) current.institution = parts[0];
+                          if (parts[1]) current.period = parts[1];
                         }
                         if (paragraphs[1]) {
                           const text = paragraphs[1].textContent || "";
-                          await handleEducationSave(index, "institutionKo", text.trim());
+                          current.institutionKo = text.trim();
                         }
+                        updatedEducation[index] = current;
+                        await handleSave("education", updatedEducation);
                       }}
                       isAuthenticated={authenticated}
                     />
@@ -471,11 +515,13 @@ export default function ProfessorPage() {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(content, "text/html");
                         const paragraphs = doc.querySelectorAll("p");
+                        const updatedCareer = [...professorData.career];
+                        const current = { ...updatedCareer[index] };
                         if (paragraphs[0]) {
                           const text = paragraphs[0].textContent || "";
                           const parts = text.split(",").map(p => p.trim());
-                          if (parts[0]) await handleCareerSave(index, "institution", parts[0]);
-                          if (parts[1]) await handleCareerSave(index, "period", parts[1]);
+                          if (parts[0]) current.institution = parts[0];
+                          if (parts[1]) current.period = parts[1];
                         }
                         if (paragraphs[1]) {
                           const text = paragraphs[1].textContent || "";
@@ -483,13 +529,15 @@ export default function ProfessorPage() {
                           if (parts.length > 0) {
                             const lastPart = parts[parts.length - 1];
                             if (lastPart.startsWith("(")) {
-                              await handleCareerSave(index, "institutionKo", lastPart);
-                              await handleCareerSave(index, "titleKo", parts.slice(0, -1).join(" "));
+                              current.institutionKo = lastPart;
+                              current.titleKo = parts.slice(0, -1).join(" ");
                             } else {
-                              await handleCareerSave(index, "titleKo", text.trim());
+                              current.titleKo = text.trim();
                             }
                           }
                         }
+                        updatedCareer[index] = current;
+                        await handleSave("career", updatedCareer);
                       }}
                       isAuthenticated={authenticated}
                     />
@@ -510,10 +558,11 @@ export default function ProfessorPage() {
                       const parser = new DOMParser();
                       const doc = parser.parseFromString(content, "text/html");
                       const anchor = doc.querySelector("a");
-                      const name = anchor?.textContent?.trim() || "";
-                      const url = anchor?.href || "";
-                      if (name) await handleLinkSave(index, "name", name);
-                      if (url) await handleLinkSave(index, "url", url);
+                      const name = anchor?.textContent?.trim() || professorData.links[index]?.name || "";
+                      const url = anchor?.href || professorData.links[index]?.url || "";
+                      const updatedLinks = [...professorData.links];
+                      updatedLinks[index] = { ...updatedLinks[index], name, url };
+                      await handleSave("links", updatedLinks);
                     }}
                     isAuthenticated={authenticated}
                   />
