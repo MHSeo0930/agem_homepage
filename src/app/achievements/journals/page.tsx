@@ -171,30 +171,51 @@ export default function JournalsPage() {
   const [excelData, setExcelData] = useState<any[]>([]); // 엑셀 데이터
   const [showJournalTable, setShowJournalTable] = useState(false); // 로그인 시 저널 이름 표 기본 숨김, 버튼으로 표시
 
+  // Submitted 제외, IF 높은 순 정렬 (Submitted는 맨 위 고정)
+  const sortedExcelData = useMemo(() => {
+    const list = excelData || [];
+    const submitted: any[] = [];
+    const rest: any[] = [];
+    list.forEach((row: any) => {
+      const name = String(row["Journal Name"] ?? row["저널 이름"] ?? "").trim();
+      if (name && name.toLowerCase() === "submitted") submitted.push(row);
+      else rest.push(row);
+    });
+    const ifNum = (row: any) => {
+      const v = row["IF"] ?? row["Impact Factor"];
+      if (v === undefined || v === null || v === "") return -1;
+      const n = parseFloat(String(v));
+      return isNaN(n) ? -1 : n;
+    };
+    rest.sort((a, b) => ifNum(b) - ifNum(a));
+    return [...submitted, ...rest];
+  }, [excelData]);
+
   const loadData = async () => {
     try {
-      const res = await fetch(`${getApiBase()}/api/content`);
+      const res = await fetch(`${getApiBase()}/api/content?_=${Date.now()}`, { cache: "no-store", credentials: "include" });
       const data = await res.json();
       const normalizeStatus = (status: string | undefined) =>
           status === "게재됨" ? "published" : status;
+      const toPublicationArray = (parsed: unknown): { number: number; status?: string }[] => {
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+          return Object.values(parsed).filter((p: any) => p && p.number != null) as { number: number; status?: string }[];
+        return [];
+      };
       if (data.journalPublications) {
         try {
           const parsed = JSON.parse(data.journalPublications);
-          // 배열인지 확인
-          if (Array.isArray(parsed)) {
-            setPublications(parsed.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
-          }
+          const list = toPublicationArray(parsed);
+          if (list.length) setPublications(list.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
         } catch (e) {
           console.error("Failed to parse journal publications data");
         }
       } else if (data.publications) {
-        // 기존 publications 키가 있는 경우 (배열인지 확인)
         try {
           const parsed = JSON.parse(data.publications);
-          // 배열인 경우에만 사용 (Publications 컴포넌트는 객체를 저장하므로 제외)
-          if (Array.isArray(parsed)) {
-            setPublications(parsed.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
-          }
+          const list = toPublicationArray(parsed);
+          if (list.length) setPublications(list.map((p: { status?: string }) => ({ ...p, status: normalizeStatus(p.status) })));
         } catch (e) {
           console.error("Failed to parse publications data");
         }
@@ -717,6 +738,7 @@ export default function JournalsPage() {
                           const response = await fetch(`${getApiBase()}/api/excel`, {
                             method: "PUT",
                             body: formData,
+                            credentials: "include",
                           });
                           
                           const result = await response.json();
@@ -824,13 +846,14 @@ export default function JournalsPage() {
               
               {showJournalTable && (
               <ExcelEditor
-                data={excelData}
-                onDataChange={setExcelData}
+                data={sortedExcelData}
+                onDataChange={(newData) => setExcelData(newData)}
                 onSave={async (data) => {
                   try {
                     const response = await fetch(`${getApiBase()}/api/excel`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
+                      credentials: "include",
                       body: JSON.stringify({ data, updatePublications: true }),
                     });
                     
@@ -1123,7 +1146,7 @@ export default function JournalsPage() {
                     />
                     {authenticated || pub.if ? (
                       <EditableContent
-                        contentKey={`pub-${pub.number}-if`}
+                        contentKey={`pub-${pub.number}-if-${pub.if ?? ""}`}
                         defaultValue={pub.if ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">IF: ${pub.if}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">IF: -</span>'}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
@@ -1147,7 +1170,7 @@ export default function JournalsPage() {
                     ) : null}
                     {authenticated || pub.jcrRanking ? (
                       <EditableContent
-                        contentKey={`pub-${pub.number}-jcr`}
+                        contentKey={`pub-${pub.number}-jcr-${pub.jcrRanking ?? ""}`}
                         defaultValue={pub.jcrRanking ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">JCR: ${pub.jcrRanking}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">JCR: -</span>'}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");

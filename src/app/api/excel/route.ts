@@ -4,6 +4,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { isAuthenticated } from "@/lib/auth";
 import { getContent, saveContent } from "@/lib/contentStore";
+import { JOURNAL_ABBR_TO_FULL } from "@/lib/journalNames";
 import { put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
@@ -113,7 +114,8 @@ async function updatePublicationsFromExcelData(data: any[], content: Record<stri
   let publications: any[] = [];
   if (content.journalPublications && typeof content.journalPublications === "string") {
     try {
-      publications = JSON.parse(content.journalPublications);
+      const parsed = JSON.parse(content.journalPublications);
+      publications = Array.isArray(parsed) ? parsed : Object.values(parsed).filter((p: any) => p && p.number != null);
     } catch (e) {
       console.error("Failed to parse journalPublications:", e);
     }
@@ -139,10 +141,33 @@ async function updatePublicationsFromExcelData(data: any[], content: Record<stri
     journalMap.set(journalName, info);
     abbreviations.forEach((abbr: string) => journalMap.set(abbr, info));
   });
+  // 엑셀에 정식명만 있을 때: 약어로 저장된 논문도 매칭되도록 공용 약어→정식명으로 행 연결
+  Object.entries(JOURNAL_ABBR_TO_FULL).forEach(([abbr, fullName]) => {
+    if (!journalMap.has(abbr) && journalMap.has(fullName)) {
+      journalMap.set(abbr, journalMap.get(fullName)!);
+    }
+  });
+
+  const journalMapKeysLower = new Map<string, string>();
+  journalMap.forEach((_, key) => {
+    journalMapKeysLower.set(key.toLowerCase(), key);
+  });
+  const getJournalInfo = (rawJournal: string) => {
+    let info = journalMap.get(rawJournal);
+    if (info) return info;
+    const fullName = JOURNAL_ABBR_TO_FULL[rawJournal];
+    if (fullName) info = journalMap.get(fullName);
+    if (info) return info;
+    const lower = rawJournal.toLowerCase();
+    const canonicalKey = journalMapKeysLower.get(lower);
+    if (canonicalKey) return journalMap.get(canonicalKey);
+    return undefined;
+  };
 
   const updatedPublications = publications.map((pub: any) => {
     const rawJournal = pub.journal?.trim();
-    const journalInfo = journalMap.get(rawJournal);
+    if (!rawJournal) return pub;
+    const journalInfo = getJournalInfo(rawJournal);
     if (journalInfo) {
       const updated = { ...pub };
       if (journalInfo.if !== undefined && journalInfo.if !== null && !isNaN(journalInfo.if)) updated.if = journalInfo.if;
