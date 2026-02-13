@@ -322,7 +322,7 @@ export default function Publications() {
                     </div>
                     {pub.if && (
                       <p className="text-xs text-gray-500 mb-2">
-                        IF: {pub.if} {pub.jcrRanking && `(JCR: ${pub.jcrRanking})`}
+                        IF: {pub.if} {pub.jcrRanking && `(JCR: ${pub.jcrRanking.endsWith("%") ? pub.jcrRanking : pub.jcrRanking + "%"})`}
                       </p>
                     )}
                     {pub.specialNote && (

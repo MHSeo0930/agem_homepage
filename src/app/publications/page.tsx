@@ -78,7 +78,7 @@ export default function PublicationsPage() {
                   )}
                   {pub.jcrRanking && (
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      JCR: {pub.jcrRanking}
+                      JCR: {pub.jcrRanking?.endsWith("%") ? pub.jcrRanking : pub.jcrRanking ? `${pub.jcrRanking}%` : ""}
                     </span>
                   )}
                 </div>

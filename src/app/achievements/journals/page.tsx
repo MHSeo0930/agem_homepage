@@ -1171,7 +1171,7 @@ export default function JournalsPage() {
                     {authenticated || pub.jcrRanking ? (
                       <EditableContent
                         contentKey={`pub-${pub.number}-jcr-${pub.jcrRanking ?? ""}`}
-                        defaultValue={pub.jcrRanking ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">JCR: ${pub.jcrRanking}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">JCR: -</span>'}
+                        defaultValue={pub.jcrRanking ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">JCR: ${pub.jcrRanking.endsWith("%") ? pub.jcrRanking : pub.jcrRanking + "%"}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">JCR: -</span>'}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
