@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { JOURNAL_ABBR_TO_FULL } from "@/lib/journalNames";
 import EditableContent from "@/components/EditableContent";
 import { publications as initialPublications } from "@/data/publications";
 
@@ -12,7 +13,7 @@ function ExcelEditor({ data, onDataChange, onSave }: { data: any[]; onDataChange
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const columns = ["Journal Name", "IF", "JCR %"];
+  const columns = ["Journal Name", "Abbreviation", "IF", "JCR %"];
 
   const handleCellClick = (row: number, col: string) => {
     const currentValue = data[row]?.[col] || "";
@@ -41,7 +42,7 @@ function ExcelEditor({ data, onDataChange, onSave }: { data: any[]; onDataChange
   };
 
   const handleAddRow = () => {
-    onDataChange([...data, { "Journal Name": "", "IF": "", "JCR %": "" }]);
+    onDataChange([...data, { "Journal Name": "", "Abbreviation": "", "IF": "", "JCR %": "" }]);
   };
 
   const handleDeleteRow = (index: number) => {
@@ -64,7 +65,7 @@ function ExcelEditor({ data, onDataChange, onSave }: { data: any[]; onDataChange
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="mb-4 flex justify-between items-center">
         <p className="text-sm text-gray-600">
-          저널 이름을 입력하고 IF와 JCR %를 기록하세요. 저장하면 publications에 자동으로 반영됩니다.
+          저널 이름(정식명), 약어(선택, 쉼표 구분), IF, JCR %를 입력하세요. 약어를 넣으면 기존 논문의 약어 저널명으로도 IF/JCR이 적용되고 드롭다운에 정식명이 선택됩니다.
         </p>
         <div className="flex gap-2">
           <button
@@ -257,31 +258,69 @@ export default function JournalsPage() {
     }
   }, [authenticated]);
 
-  // 엑셀 저널 테이블에서 저널명 → IF, JCR 매핑 (논문 저장 시 자동 반영용)
+  // 엑셀 저널 테이블: 저널명·약어 → IF, JCR 매핑. 공용 약어는 정식명 행과 연결해 매칭
   const journalMapFromExcel = useMemo(() => {
     const map = new Map<string, { if?: number; jcrRanking?: string }>();
     (excelData || []).forEach((row: Record<string, unknown>) => {
-      const journalName = (row["Journal Name"] ?? row["저널 이름"]) as string;
-      if (journalName && String(journalName).trim()) {
-        const ifVal = row["IF"] ?? row["Impact Factor"];
-        const jcrVal = row["JCR %"] ?? row["JCR Ranking"] ?? row["JCR%"];
-        const ifNum = ifVal !== undefined && ifVal !== null && ifVal !== "" ? parseFloat(String(ifVal)) : undefined;
-        map.set(String(journalName).trim(), {
-          if: ifNum !== undefined && !isNaN(ifNum) ? ifNum : undefined,
-          jcrRanking: jcrVal !== undefined && jcrVal !== null && jcrVal !== "" ? String(jcrVal) : undefined,
-        });
-      }
+      const journalName = String(row["Journal Name"] ?? row["저널 이름"] ?? "").trim();
+      const abbrRaw = row["Abbreviation"] ?? row["약어"] ?? row["Short name"] ?? "";
+      const abbreviations = abbrRaw
+        ? String(abbrRaw)
+            .split(/[,;]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+      if (!journalName) return;
+      const ifVal = row["IF"] ?? row["Impact Factor"];
+      const jcrVal = row["JCR %"] ?? row["JCR Ranking"] ?? row["JCR%"];
+      const ifNum = ifVal !== undefined && ifVal !== null && ifVal !== "" ? parseFloat(String(ifVal)) : undefined;
+      const info = {
+        if: ifNum !== undefined && !isNaN(ifNum) ? ifNum : undefined,
+        jcrRanking: jcrVal !== undefined && jcrVal !== null && jcrVal !== "" ? String(jcrVal) : undefined,
+      };
+      map.set(journalName, info);
+      abbreviations.forEach((abbr) => map.set(abbr, info));
+    });
+    // 공용 약어: 엑셀에 정식명으로 있는 행이 있으면 그 IF/JCR을 약어에도 연결
+    Object.entries(JOURNAL_ABBR_TO_FULL).forEach(([abbr, fullName]) => {
+      if (!map.has(abbr) && map.has(fullName)) map.set(abbr, map.get(fullName)!);
     });
     return map;
   }, [excelData]);
 
-  // 셀렉트용 저널 이름 목록: Submitted 맨 위, 나머지 엑셀 기준 정렬
+  // 약어 → 정식 저널명(Full name) 매핑. 공용 매핑 + 엑셀(엑셀 우선). 표시·셀렉트·일괄 변경에 사용
+  const abbrToFullName = useMemo(() => {
+    const map = new Map<string, string>(Object.entries(JOURNAL_ABBR_TO_FULL));
+    (excelData || []).forEach((row: Record<string, unknown>) => {
+      const fullName = String(row["Journal Name"] ?? row["저널 이름"] ?? "").trim();
+      const abbrRaw = row["Abbreviation"] ?? row["약어"] ?? row["Short name"] ?? "";
+      if (!fullName) return;
+      const abbreviations = abbrRaw
+        ? String(abbrRaw)
+            .split(/[,;]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [];
+      abbreviations.forEach((abbr) => map.set(abbr, fullName));
+    });
+    return map;
+  }, [excelData]);
+
+  // 표시용 저널명 (약어면 정식명, 없으면 그대로)
+  const getDisplayJournal = (journal: string | undefined) =>
+    journal?.trim() ? (abbrToFullName.get(journal.trim()) || journal.trim()) : "";
+
+  // 셀렉트용 저널 이름 목록: 엑셀 정식명 + 공용 매핑 정식명 합쳐서 사용 (약어로 저장된 논문도 선택 가능)
   const excelJournalNames = useMemo(() => {
-    const fromExcel = Array.from(journalMapFromExcel.keys())
-      .filter((j) => j.toLowerCase() !== "submitted")
-      .sort((a, b) => a.localeCompare(b));
-    return ["submitted", ...fromExcel];
-  }, [journalMapFromExcel]);
+    const fullNames = new Set<string>();
+    (excelData || []).forEach((row: Record<string, unknown>) => {
+      const name = String(row["Journal Name"] ?? row["저널 이름"] ?? "").trim();
+      if (name && name.toLowerCase() !== "submitted") fullNames.add(name);
+    });
+    Object.values(JOURNAL_ABBR_TO_FULL).forEach((name) => fullNames.add(name));
+    const sorted = Array.from(fullNames).sort((a, b) => a.localeCompare(b));
+    return ["submitted", ...sorted];
+  }, [excelData]);
 
   const handleSave = async (pubNumber: number, field: string, value: string | number) => {
     // 배열이 아닌 경우 처리
@@ -740,6 +779,46 @@ export default function JournalsPage() {
                   >
                     {showJournalTable ? "📋 저널 이름 표 숨기기" : "📋 저널 이름 표 보기"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!Array.isArray(publications) || publications.length === 0) return;
+                      const fullNameFor = (j: string | undefined) =>
+                        j?.trim() ? abbrToFullName.get(j.trim()) ?? j.trim() : "";
+                      const changed = publications.filter(
+                        (p) => p.journal?.trim() && fullNameFor(p.journal) !== p.journal?.trim()
+                      );
+                      if (changed.length === 0) {
+                        alert("약어로 저장된 저널이 없습니다. 이미 모두 정식명입니다.");
+                        return;
+                      }
+                      if (!confirm(`저널이 약어로 저장된 논문 ${changed.length}건을 정식명으로 바꿔 저장할까요?`)) return;
+                      const updated = publications.map((p) => {
+                        const full = fullNameFor(p.journal);
+                        if (full && full !== (p.journal?.trim() ?? ""))
+                          return { ...p, journal: full };
+                        return p;
+                      });
+                      setPublications(updated);
+                      try {
+                        const res = await fetch(`${getApiBase()}/api/content`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          credentials: "include",
+                          body: JSON.stringify({ journalPublications: JSON.stringify(updated) }),
+                        });
+                        if (!res.ok) throw new Error("저장 실패");
+                        await loadData();
+                        alert(`${changed.length}건 저널명이 정식명으로 저장되었습니다.`);
+                      } catch (e) {
+                        console.error(e);
+                        alert("저장 중 오류가 발생했습니다.");
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors text-sm font-medium"
+                  >
+                    📝 저널명 일괄 정식명으로 저장
+                  </button>
                 </div>
               </div>
               
@@ -975,11 +1054,11 @@ export default function JournalsPage() {
                     isAuthenticated={authenticated}
                   />
                   
-                  {/* 저널 정보 편집 가능 */}
+                  {/* 저널 정보 편집 가능 (표시는 정식명으로) */}
                   <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                     <EditableContent
                       contentKey={`pub-${pub.number}-journal`}
-                      defaultValue={`<span class="font-medium">${pub.journal}</span>`}
+                      defaultValue={`<span class="font-medium">${getDisplayJournal(pub.journal) || pub.journal || ""}</span>`}
                       onSave={async (content) => {
                         // HTML에서 텍스트만 추출하여 저장
                         const tempDiv = document.createElement("div");
@@ -996,7 +1075,13 @@ export default function JournalsPage() {
                     />
                     {authenticated && excelJournalNames.length > 0 && (
                       <select
-                        value=""
+                        value={
+                          (() => {
+                            const raw = pub.journal?.trim() ?? "";
+                            const resolved = abbrToFullName.get(raw) || raw;
+                            return excelJournalNames.includes(resolved) ? resolved : "";
+                          })()
+                        }
                         onChange={async (e) => {
                           const selected = e.target.value;
                           if (!selected) return;
@@ -1005,8 +1090,6 @@ export default function JournalsPage() {
                             p.number === pub.number ? { ...p, journal: selected } : p
                           );
                           setPublications(updatedPublications);
-                          // 선택 후 다시 placeholder 로 되돌리기
-                          e.currentTarget.value = "";
                         }}
                         className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
                       >

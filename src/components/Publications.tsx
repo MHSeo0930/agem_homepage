@@ -6,6 +6,7 @@ import { recentPublications, publications } from "@/data/publications";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { getJournalDisplayName } from "@/lib/journalNames";
 
 export default function Publications() {
   const { authenticated } = useAuth();
@@ -311,7 +312,7 @@ export default function Publications() {
                   </p>
                     <div className="flex items-center gap-2 flex-wrap mb-2">
                       <p className="text-sm text-gray-500">
-                        <span className="font-bold text-gray-700">{pub.journal}</span> ({pub.year})
+                        <span className="font-bold text-gray-700">{getJournalDisplayName(pub.journal) || pub.journal}</span> ({pub.year})
                       </p>
                       {pub.status === "submitted" && (
                         <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">

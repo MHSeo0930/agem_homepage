@@ -1,4 +1,5 @@
 import { publications } from "@/data/publications";
+import { getJournalDisplayName } from "@/lib/journalNames";
 
 export const metadata = {
   title: "Publications | Min Ho Seo",
@@ -68,7 +69,7 @@ export default function PublicationsPage() {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                   <p>
-                    <span className="font-medium">{pub.journal}</span> ({pub.year})
+                    <span className="font-medium">{getJournalDisplayName(pub.journal) || pub.journal}</span> ({pub.year})
                   </p>
                   {pub.if && (
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded">

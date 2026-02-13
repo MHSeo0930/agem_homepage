@@ -121,19 +121,28 @@ async function updatePublicationsFromExcelData(data: any[], content: Record<stri
 
   const journalMap = new Map<string, { if?: number; jcrRanking?: string }>();
   data.forEach((row: any) => {
-    const journalName = row["Journal Name"] || row["저널 이름"];
-    if (journalName && journalName.trim()) {
-      const ifValue = row["IF"] || row["Impact Factor"];
-      const jcrValue = row["JCR %"] || row["JCR Ranking"] || row["JCR%"];
-      journalMap.set(journalName.trim(), {
-        if: ifValue !== undefined && ifValue !== null && ifValue !== "" ? parseFloat(String(ifValue)) : undefined,
-        jcrRanking: jcrValue !== undefined && jcrValue !== null && jcrValue !== "" ? String(jcrValue) : undefined,
-      });
-    }
+    const journalName = (row["Journal Name"] || row["저널 이름"] || "").toString().trim();
+    const abbrRaw = row["Abbreviation"] || row["약어"] || row["Short name"] || "";
+    const abbreviations = abbrRaw
+      ? String(abbrRaw)
+          .split(/[,;]/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+    if (!journalName) return;
+    const ifValue = row["IF"] || row["Impact Factor"];
+    const jcrValue = row["JCR %"] || row["JCR Ranking"] || row["JCR%"];
+    const info = {
+      if: ifValue !== undefined && ifValue !== null && ifValue !== "" ? parseFloat(String(ifValue)) : undefined,
+      jcrRanking: jcrValue !== undefined && jcrValue !== null && jcrValue !== "" ? String(jcrValue) : undefined,
+    };
+    journalMap.set(journalName, info);
+    abbreviations.forEach((abbr: string) => journalMap.set(abbr, info));
   });
 
   const updatedPublications = publications.map((pub: any) => {
-    const journalInfo = journalMap.get(pub.journal?.trim());
+    const rawJournal = pub.journal?.trim();
+    const journalInfo = journalMap.get(rawJournal);
     if (journalInfo) {
       const updated = { ...pub };
       if (journalInfo.if !== undefined && journalInfo.if !== null && !isNaN(journalInfo.if)) updated.if = journalInfo.if;
