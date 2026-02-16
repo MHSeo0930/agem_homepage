@@ -6,18 +6,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import { postContent } from "@/lib/contentApi";
 
-// 구글 맵 ?q=...&output=embed 는 임베드 제한으로 깨질 수 있음 → API 키 또는 OpenStreetMap 사용
-const PKNU_LAT = 35.1376;
-const PKNU_LON = 129.0847;
-const OSM_BBOX = "129.078,35.130,129.092,35.145";
+// 부경대학교 대연캠퍼스 공학1관(E13) 1308호 (용소로 45)
+const PKNU_LAT = 35.13162;
+const PKNU_LON = 129.10358;
 const ADDRESS = "부산광역시 남구 용소로 45";
 const GOOGLE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS)}`;
 const OSM_LINK = `https://www.openstreetmap.org/?mlat=${PKNU_LAT}&mlon=${PKNU_LON}&zoom=17`;
+// bbox: minLon,minLat,maxLon,maxLat (캠퍼스가 중앙에 오도록)
+const OSM_BBOX = "129.096,35.125,129.112,35.139";
 
 function MapIframe() {
   const apiKey =
     typeof process !== "undefined" ? process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY : undefined;
   const addressEncoded = encodeURIComponent(ADDRESS);
+  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${OSM_BBOX}&layer=mapnik&marker=${PKNU_LAT}%2C${PKNU_LON}`;
 
   if (apiKey) {
     return (
@@ -29,23 +31,24 @@ function MapIframe() {
         allowFullScreen
         loading="lazy"
         referrerPolicy="strict-origin-when-cross-origin"
-        className="w-full h-full min-h-[280px]"
+        className="w-full h-full min-h-[320px]"
         title="부산광역시 남구 용소로 45"
       />
     );
   }
 
   return (
-    <div className="w-full h-full min-h-[280px] relative">
+    <div className="w-full min-h-[320px] relative" style={{ aspectRatio: "16/10" }}>
       <iframe
-        src={`https://www.openstreetmap.org/export/embed.html?bbox=${OSM_BBOX}&layer=mapnik&marker=${PKNU_LAT}%2C${PKNU_LON}`}
+        src={osmEmbedUrl}
         width="100%"
         height="100%"
-        style={{ border: 0 }}
+        style={{ border: 0, position: "absolute", inset: 0 }}
         allowFullScreen
         loading="lazy"
-        className="w-full h-full min-h-[280px] absolute inset-0"
-        title="부산광역시 남구 용소로 45"
+        referrerPolicy="no-referrer-when-downgrade"
+        className="rounded-lg"
+        title="부경대학교 대연캠퍼스 - 부산광역시 남구 용소로 45"
       />
       {/* 일부 환경에서 iframe이 차단될 때를 위한 대체 링크 */}
       <div className="absolute bottom-2 right-2 flex gap-2">
