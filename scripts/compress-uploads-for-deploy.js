@@ -3,6 +3,7 @@
  * 배포용: public/uploads 내 이미지를 압축해 덮어씀.
  * NAS 원본은 00_deploy.sh에서 백업 후 이 스크립트 실행 → 푸시 후 복원하므로 손실 없음.
  * - JPEG/PNG/WebP: 최대 1920px, 포맷별 압축 (동일 확장자 유지)
+ * - EXIF 방향 적용: .rotate()로 휴대폰 등에서 찍은 사진이 눕거나 뒤집히지 않도록 픽셀에 반영
  * - GIF: 건드리지 않음 (애니메이션 유지)
  */
 
@@ -16,6 +17,7 @@ const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
 async function compressImage(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   let pipeline = sharp(filePath)
+    .rotate() // EXIF orientation 적용 (휴대폰 사진 눕는/뒤집힘 방지)
     .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true });
 
   if (ext === '.gif') return; // 스킵

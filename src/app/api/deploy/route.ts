@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
+import fs from "fs";
 import { isAuthenticated } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -13,17 +14,23 @@ export async function POST() {
 
     const projectRoot = process.cwd();
     const scriptPath = path.join(projectRoot, "scripts", "00_deploy.sh");
+    const logPath = path.join(projectRoot, ".deploy.log");
+    const logStream = fs.createWriteStream(logPath, { flags: "w" });
 
     const child = spawn("bash", [scriptPath, "2"], {
       cwd: projectRoot,
-      detached: true,
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout?.pipe(logStream, { end: false });
+    child.stderr?.pipe(logStream);
+    child.on("close", () => {
+      logStream.end();
     });
     child.unref();
 
     return NextResponse.json({
       success: true,
-      message: "배포가 백그라운드에서 시작되었습니다. 빌드 후 Git 푸시까지 수 분 소요될 수 있습니다.",
+      message: "배포를 시작했습니다. 아래 진행 상황을 확인하세요.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to start deploy";
