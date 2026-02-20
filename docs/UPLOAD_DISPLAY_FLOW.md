@@ -3,6 +3,8 @@
 ## 1. 전체 흐름 (단계별)
 
 ### 1단계: 업로드 API (POST /api/upload)
+- **NAS/로컬**: 원본 무손실 저장. 압축 없음.
+- **배포 시에만 압축**: `00_deploy.sh` 또는 `push-content.sh` 실행 시 public/uploads 백업 → 압축(최대 1920px, 포맷별 품질) → 푸시 후 원본 복원. Vercel 250MB 제한 완화.
 - **파일 저장**: `process.cwd()/public/uploads/<safeFilename>` (로컬/NAS)
 - **반환 URL**: `basePath + "/uploads/" + safeFilename` → 예: `/agem_homepage/uploads/1739xxxxxx-abc.jpg`
 - **점검**: NAS에서 `public/uploads/` 쓰기 권한, `process.cwd()`가 프로젝트 루트인지

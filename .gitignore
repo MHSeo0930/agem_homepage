@@ -50,6 +50,9 @@ next-env.d.ts
 # local backups (optional: remove this block if you want to track backups)
 backup_*/
 
+# 배포 시 uploads 백업용 (푸시 후 복원용, 커밋 안 함)
+.deploy-uploads-backup
+
 
 
 

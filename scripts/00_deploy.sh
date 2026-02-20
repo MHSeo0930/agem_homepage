@@ -74,27 +74,45 @@ case "$choice" in
   2)
     echo ""
     echo "[배포]"
-    echo "[1/4] 빌드 중..."
+    echo "[1/5] 빌드 중..."
     npm run build
 
-    MSG="${1:-Deploy $(date +%Y-%m-%d\ %H:%M)}"
-    echo "[2/4] 전체 변경사항 스테이징..."
+    BACKUP_DIR=".deploy-uploads-backup"
+    UPLOADS_DIR="public/uploads"
+    if [ -d "$UPLOADS_DIR" ] && [ -n "$(ls -A "$UPLOADS_DIR" 2>/dev/null)" ]; then
+      echo "[2/5] public/uploads 백업 후 배포용 압축..."
+      rm -rf "$BACKUP_DIR"
+      cp -r "$UPLOADS_DIR" "$BACKUP_DIR"
+      node scripts/compress-uploads-for-deploy.js
+    else
+      echo "[2/5] public/uploads 없음, 압축 단계 생략"
+    fi
+
+    MSG="${2:-Deploy $(date +%Y-%m-%d\ %H:%M)}"
+    echo "[3/5] 전체 변경사항 스테이징..."
     git add .
 
-    echo "[3/4] 커밋: $MSG"
+    echo "[4/5] 커밋: $MSG"
     if git diff --staged --quiet 2>/dev/null; then
       echo "변경된 파일이 없습니다. (이미 모두 커밋된 상태)"
+      [ -d "$BACKUP_DIR" ] && rm -rf "$UPLOADS_DIR" && mv "$BACKUP_DIR" "$UPLOADS_DIR" && echo "  uploads 원본 복원함."
       exit 0
     fi
     git commit -m "$MSG"
 
-    echo "[4/4] 푸시 (origin main)..."
+    echo "[5/5] 푸시 (origin main)..."
     git push origin main
+
+    if [ -d "$BACKUP_DIR" ]; then
+      echo "  uploads 원본 복원 중..."
+      rm -rf "$UPLOADS_DIR"
+      mv "$BACKUP_DIR" "$UPLOADS_DIR"
+    fi
 
     echo ""
     echo "배포 요청 완료. Git + GitHub Pages + Vercel에 반영됩니다 (Vercel 1~2분 소요)."
     echo "  커밋: $(git log -1 --oneline)"
-    echo "  업로드 사진이 포함돼 있으면 public/uploads/ 도 푸시됨 → NAS·Vercel 모두 반영."
+    echo "  NAS는 원본 무손실 유지, 배포본만 압축되어 푸시됨 (250MB 제한 완화)."
     echo "  콘텐츠·사진만 푸시할 때: ./scripts/push-content.sh"
     ;;
   *)

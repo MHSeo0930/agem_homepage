@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const safeFilename = getSaveFilename(file.name, timestamp);
 
+    // NAS/로컬: 원본 무손실 저장. 배포 시에만 scripts에서 압축 후 푸시.
+
     // Vercel: Blob 사용 시 영구 저장
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(`uploads/${safeFilename}`, buffer, {

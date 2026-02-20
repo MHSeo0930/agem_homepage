@@ -16,14 +16,25 @@ fi
 cd "$(dirname "$0")/.."
 
 MSG="${1:-Update content $(date +%Y-%m-%d\ %H:%M)}"
+BACKUP_DIR=".deploy-uploads-backup"
+UPLOADS_DIR="public/uploads"
 
-echo "[1/4] 대상 파일 상태 확인..."
+echo "[1/5] 대상 파일 상태 확인..."
 git status --short data/content.json data/journals.xlsx public/uploads/ 2>/dev/null || true
 if [ ! -f data/content.json ]; then
   echo "  경고: data/content.json 이 없습니다. 로컬에서 npm run dev 후 편집·저장하면 생성됩니다."
 fi
 
-echo "[2/4] 스테이징: data/content.json, data/journals.xlsx, public/uploads/"
+if [ -d "$UPLOADS_DIR" ] && [ -n "$(ls -A "$UPLOADS_DIR" 2>/dev/null)" ]; then
+  echo "[2/5] public/uploads 백업 후 배포용 압축..."
+  rm -rf "$BACKUP_DIR"
+  cp -r "$UPLOADS_DIR" "$BACKUP_DIR"
+  node scripts/compress-uploads-for-deploy.js
+else
+  echo "[2/5] public/uploads 없음, 압축 단계 생략"
+fi
+
+echo "[3/5] 스테이징: data/content.json, data/journals.xlsx, public/uploads/"
 git add -f data/content.json data/journals.xlsx 2>/dev/null || true
 git add public/uploads/ 2>/dev/null || true
 
@@ -37,14 +48,20 @@ if git diff --staged --quiet 2>/dev/null; then
   exit 1
 fi
 
-echo "[3/4] 커밋: $MSG"
+echo "[4/5] 커밋: $MSG"
 git commit -m "$MSG"
 
-echo "[4/4] 푸시 (origin main)..."
+echo "[5/5] 푸시 (origin main)..."
 git push origin main
 
+if [ -d "$BACKUP_DIR" ]; then
+  echo "  uploads 원본 복원 중..."
+  rm -rf "$UPLOADS_DIR"
+  mv "$BACKUP_DIR" "$UPLOADS_DIR"
+fi
+
 echo ""
-echo "푸시 완료. 업로드 사진·콘텐츠가 Git + Vercel에 반영됩니다."
+echo "푸시 완료. 업로드 사진·콘텐츠가 Git + Vercel에 반영됩니다 (배포본만 압축, NAS는 원본 유지)."
 echo "  - Git: $(git log -1 --oneline)"
 echo "  - Vercel: 1~2분 내 자동 재배포 (Deployments 탭 확인)"
 echo "  - NAS: 다른 쪽에서 푸시했으면 이 기기에서 'git pull' 로 동기화"
