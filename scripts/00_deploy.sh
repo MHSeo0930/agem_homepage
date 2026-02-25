@@ -101,7 +101,13 @@ case "$choice" in
     git commit -m "$MSG"
 
     echo "[5/5] 푸시 (origin main)..."
-    git push origin main
+    if ! git push origin main; then
+      echo ""
+      echo "  !! 푸시 실패. Vercel/GitHub에 반영되지 않습니다."
+      echo "  원인: Git 인증(토큰·SSH) 또는 origin URL 확인. 터미널에서 직접 실행해 오류 메시지를 확인하세요."
+      [ -d "$BACKUP_DIR" ] && rm -rf "$UPLOADS_DIR" && mv "$BACKUP_DIR" "$UPLOADS_DIR"
+      exit 1
+    fi
 
     if [ -d "$BACKUP_DIR" ]; then
       echo "  uploads 원본 복원 중..."
@@ -114,6 +120,9 @@ case "$choice" in
     echo "  커밋: $(git log -1 --oneline)"
     echo "  NAS는 원본 무손실 유지, 배포본만 압축되어 푸시됨 (250MB 제한 완화)."
     echo "  콘텐츠·사진만 푸시할 때: ./scripts/push-content.sh"
+    echo ""
+    echo "  [Vercel에 안 뜨면] Vercel 대시보드 → Deployments 에서 새 배포가 생성됐는지, 빌드가 성공(초록)인지 확인하세요."
+    echo "  GitHub에 커밋이 올라갔는지: 저장소 → Commits 에서 방금 커밋이 보여야 합니다."
     ;;
   *)
     echo "1 또는 2를 입력하세요."

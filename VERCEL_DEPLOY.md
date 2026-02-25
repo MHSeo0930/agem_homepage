@@ -29,6 +29,26 @@
 
 ---
 
+## 배포 후 Vercel에 반영이 안 될 때 점검
+
+1. **Git 푸시가 성공했는지**
+   - 배포 진행 로그에서 `[5/5] 푸시 (origin main)...` 다음에 에러 없이 `배포 요청 완료`가 나와야 합니다.
+   - **GitHub** → 저장소 **Commits** 에 방금 배포한 커밋(예: "Deploy 2026-02-20 ...")이 보이면 푸시는 성공한 것입니다. 안 보이면 푸시 실패(인증·origin URL 등)입니다.
+
+2. **Vercel이 올바른 저장소·브랜치에 연결돼 있는지**
+   - **Vercel 대시보드** → 해당 프로젝트 → **Settings** → **Git**
+   - **Production Branch**가 `main`인지, 연결된 저장소가 `MHSeo0930/agem_homepage`(또는 사용 중인 repo)인지 확인하세요.
+
+3. **Vercel에 새 배포가 생성·빌드됐는지**
+   - **Deployments** 탭에서 푸시 직후 새 배포가 생겼는지 확인합니다.
+   - 상태가 **Building** → **Ready**(초록)이면 정상입니다. **Error**면 해당 배포 클릭 후 빌드 로그에서 원인을 확인하세요(예: 250MB 초과, 빌드 실패).
+
+4. **로컬에서 푸시가 실패하는 경우**
+   - 터미널에서 직접 실행해 오류 메시지를 확인하세요: `cd /var/services/homes/Share/Homepage && ./scripts/00_deploy.sh 2`
+   - `git push origin main` 실패 시: HTTPS면 토큰/비밀번호, SSH면 키 등 Git 인증을 확인하고, `git remote -v`로 origin URL이 GitHub 저장소와 일치하는지 봅니다.
+
+---
+
 ## 로컬에서만 작업 후 배포 (Redis/Blob 없이, 용량/비용 절감)
 
 **편집은 로컬에서만 하고, 변경분을 Git에 올려 배포**하는 방식입니다. Vercel에서 Redis·Blob을 쓰지 않아 용량/비용 부담이 없습니다.
