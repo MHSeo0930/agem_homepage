@@ -21,8 +21,13 @@ export default function Header() {
   const [deployLog, setDeployLog] = useState("");
   const deployPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logEndRef = useRef<HTMLPreElement>(null);
+  const [mounted, setMounted] = useState(false);
   const { authenticated, loading, checkAuth } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!deployLogOpen) return;
@@ -458,8 +463,7 @@ export default function Header() {
       )}
     </header>
 
-    {deployLogOpen &&
-      typeof document !== "undefined" &&
+    {mounted && deployLogOpen && typeof document !== "undefined" && document.body &&
       createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
