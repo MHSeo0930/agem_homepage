@@ -89,10 +89,10 @@ case "$choice" in
     fi
 
     MSG="${2:-Deploy $(date +%Y-%m-%d\ %H:%M)}"
-    echo "[3/5] 전체 변경사항 스테이징..."
+    echo "[3/6] 전체 변경사항 스테이징..."
     git add .
 
-    echo "[4/5] 커밋: $MSG"
+    echo "[4/6] 커밋: $MSG"
     if git diff --staged --quiet 2>/dev/null; then
       echo "변경된 파일이 없습니다. (이미 모두 커밋된 상태)"
       [ -d "$BACKUP_DIR" ] && rm -rf "$UPLOADS_DIR" && mv "$BACKUP_DIR" "$UPLOADS_DIR" && echo "  uploads 원본 복원함."
@@ -100,7 +100,16 @@ case "$choice" in
     fi
     git commit -m "$MSG"
 
-    echo "[5/5] 푸시 (origin main)..."
+    echo "[5/6] 원격 변경사항 반영 중 (pull --rebase)..."
+    if ! git pull --rebase origin main; then
+      echo ""
+      echo "  !! pull 실패 (원격에 새 커밋이 있어 충돌 가능). 수동으로 해결 후 다시 배포하세요."
+      echo "  예: git rebase --abort   또는 충돌 해결 후  git rebase --continue"
+      [ -d "$BACKUP_DIR" ] && rm -rf "$UPLOADS_DIR" && mv "$BACKUP_DIR" "$UPLOADS_DIR"
+      exit 1
+    fi
+
+    echo "[6/6] 푸시 (origin main)..."
     if ! git push origin main; then
       echo ""
       echo "  !! 푸시 실패. Vercel/GitHub에 반영되지 않습니다."
