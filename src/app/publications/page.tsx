@@ -67,17 +67,20 @@ export default function PublicationsPage() {
                 <p className="text-sm text-gray-700 mb-2">
                   {pub.authors}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                  <p>
-                    <span className="font-medium">{getJournalDisplayName(pub.journal) || pub.journal}</span> ({pub.year})
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-base text-gray-800">
+                    <span className="font-bold italic text-gray-900">
+                      {getJournalDisplayName(pub.journal) || pub.journal}
+                    </span>{" "}
+                    <span className="font-semibold not-italic text-gray-700">({pub.year})</span>
                   </p>
                   {pub.if && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">
                       IF: {pub.if}
                     </span>
                   )}
                   {pub.jcrRanking && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">
                       JCR: {pub.jcrRanking?.endsWith("%") ? pub.jcrRanking : pub.jcrRanking ? `${pub.jcrRanking}%` : ""}
                     </span>
                   )}

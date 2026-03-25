@@ -311,8 +311,11 @@ export default function Publications() {
                     {pub.authors}
                   </p>
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <p className="text-sm text-gray-500">
-                        <span className="font-bold text-gray-700">{getJournalDisplayName(pub.journal) || pub.journal}</span> ({pub.year})
+                      <p className="text-base text-gray-800">
+                        <span className="font-bold italic text-gray-900">
+                          {getJournalDisplayName(pub.journal) || pub.journal}
+                        </span>
+                        <span className="font-semibold not-italic text-gray-700"> ({pub.year})</span>
                       </p>
                       {pub.status === "submitted" && (
                         <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
@@ -321,7 +324,7 @@ export default function Publications() {
                       )}
                     </div>
                     {pub.if && (
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-base font-bold text-gray-800 mb-2">
                         IF: {pub.if} {pub.jcrRanking && `(JCR: ${pub.jcrRanking.endsWith("%") ? pub.jcrRanking : pub.jcrRanking + "%"})`}
                       </p>
                     )}

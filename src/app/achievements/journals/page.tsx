@@ -1078,10 +1078,10 @@ export default function JournalsPage() {
                   />
                   
                   {/* 저널 정보 편집 가능 (표시는 정식명으로) */}
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
+                  <div className="flex flex-wrap items-center gap-3 text-base text-gray-800 mb-2">
                     <EditableContent
                       contentKey={`pub-${pub.number}-journal`}
-                      defaultValue={`<span class="font-medium">${getDisplayJournal(pub.journal) || pub.journal || ""}</span>`}
+                      defaultValue={`<span class="font-bold italic text-gray-900">${getDisplayJournal(pub.journal) || pub.journal || ""}</span>`}
                       onSave={async (content) => {
                         // HTML에서 텍스트만 추출하여 저장
                         const tempDiv = document.createElement("div");
@@ -1147,7 +1147,7 @@ export default function JournalsPage() {
                     {authenticated || pub.if ? (
                       <EditableContent
                         contentKey={`pub-${pub.number}-if-${pub.if ?? ""}`}
-                        defaultValue={pub.if ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">IF: ${pub.if}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">IF: -</span>'}
+                        defaultValue={pub.if ? `<span class="text-sm font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">IF: ${pub.if}</span>` : '<span class="text-sm font-bold bg-gray-100 px-2.5 py-1 rounded text-gray-400">IF: -</span>'}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
@@ -1171,7 +1171,7 @@ export default function JournalsPage() {
                     {authenticated || pub.jcrRanking ? (
                       <EditableContent
                         contentKey={`pub-${pub.number}-jcr-${pub.jcrRanking ?? ""}`}
-                        defaultValue={pub.jcrRanking ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded">JCR: ${pub.jcrRanking.endsWith("%") ? pub.jcrRanking : pub.jcrRanking + "%"}</span>` : '<span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-400">JCR: -</span>'}
+                        defaultValue={pub.jcrRanking ? `<span class="text-sm font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">JCR: ${pub.jcrRanking.endsWith("%") ? pub.jcrRanking : pub.jcrRanking + "%"}</span>` : '<span class="text-sm font-bold bg-gray-100 px-2.5 py-1 rounded text-gray-400">JCR: -</span>'}
                         onSave={async (content) => {
                           const tempDiv = document.createElement("div");
                           tempDiv.innerHTML = content;
