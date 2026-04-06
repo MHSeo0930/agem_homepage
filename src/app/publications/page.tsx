@@ -1,4 +1,5 @@
-import { publications } from "@/data/publications";
+import { publications, type Publication } from "@/data/publications";
+import { getContent } from "@/lib/contentStore";
 import { getJournalDisplayName } from "@/lib/journalNames";
 
 export const metadata = {
@@ -6,7 +7,38 @@ export const metadata = {
   description: "Publications in electrocatalysts, fuel cells, water electrolysis, and energy materials",
 };
 
-export default function PublicationsPage() {
+export const dynamic = "force-dynamic";
+
+function toPublicationArray(parsed: unknown): Publication[] {
+  if (Array.isArray(parsed)) return parsed as Publication[];
+  if (parsed && typeof parsed === "object") return Object.values(parsed) as Publication[];
+  return [];
+}
+
+export default async function PublicationsPage() {
+  let allPublications: Publication[] = publications;
+
+  try {
+    const content = (await getContent()) as Record<string, unknown>;
+    const raw = content.journalPublications;
+    if (typeof raw === "string" && raw.trim() !== "") {
+      const parsed = JSON.parse(raw);
+      const list = toPublicationArray(parsed);
+      if (list.length) {
+        allPublications = list
+          .map((p) => ({
+            ...p,
+            status: p.status === "게재됨" ? "published" : p.status,
+          }))
+          .sort((a, b) => (b.number ?? 0) - (a.number ?? 0));
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load publications content", error);
+  }
+
+  const totalCount = allPublications.length;
+
   return (
     <div className="flex flex-col">
       <section className="py-16 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -26,7 +58,7 @@ export default function PublicationsPage() {
               </span>
             </p>
             <p className="text-sm text-gray-500 mt-4">
-              Total: {publications.length} publications
+              Total: {totalCount} publications
             </p>
           </div>
         </div>
@@ -35,7 +67,7 @@ export default function PublicationsPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto space-y-6">
-            {publications.map((pub) => (
+            {allPublications.map((pub) => (
               <div
                 key={pub.number}
                 className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300"
