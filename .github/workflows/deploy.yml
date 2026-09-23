@@ -44,6 +44,8 @@ jobs:
         run: npm run build
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+          # 정적 export에는 API가 없으므로 업로드 이미지는 정적 경로(/uploads)로 서빙
+          NEXT_PUBLIC_STATIC_UPLOADS: "1"
 
       # 커스텀 도메인(agem.pknu.ac.kr)은 학교 DNS 요청 후 사용. 지금은 github.io로만 서비스
       # - name: Add CNAME for custom domain

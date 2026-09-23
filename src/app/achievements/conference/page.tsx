@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import EditableContent from "@/components/EditableContent";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function ConferencePage() {
   const { authenticated } = useAuth();
@@ -216,10 +217,8 @@ export default function ConferencePage() {
     },
   ]);
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content`);
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       if (data.conferences) {
         try {
           const parsed = JSON.parse(data.conferences);
@@ -243,6 +242,14 @@ export default function ConferencePage() {
           console.error("Failed to parse conference page data");
         }
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content`);
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load conferences data", error);
     }

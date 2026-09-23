@@ -1,3 +1,5 @@
+import WithContent from "@/components/WithContent";
+
 export const metadata = {
   title: "News | Board",
   description: "Lab news and announcements",
@@ -8,6 +10,6 @@ export default function NewsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <WithContent keys={["news"]}>{children}</WithContent>;
 }
 

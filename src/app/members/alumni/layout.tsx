@@ -1,3 +1,5 @@
+import WithContent from "@/components/WithContent";
+
 export const metadata = {
   title: "Alumni | Min Ho Seo Lab",
   description: "Lab alumni",
@@ -8,6 +10,6 @@ export default function AlumniLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <WithContent keys={["alumni", "members"]}>{children}</WithContent>;
 }
 

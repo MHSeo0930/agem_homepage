@@ -1,4 +1,4 @@
-import { publications, type Publication } from "@/data/publications";
+import type { Publication } from "@/data/publications";
 import { getContent } from "@/lib/contentStore";
 import { getJournalDisplayName } from "@/lib/journalNames";
 
@@ -16,7 +16,7 @@ function toPublicationArray(parsed: unknown): Publication[] {
 }
 
 export default async function PublicationsPage() {
-  let allPublications: Publication[] = publications;
+  let allPublications: Publication[] = []; // 옛 하드코딩 목록으로 대체하지 않음
 
   try {
     const content = (await getContent()) as Record<string, unknown>;

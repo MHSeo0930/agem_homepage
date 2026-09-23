@@ -30,6 +30,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Vercel: 디스크에 영구 저장되지 않음. Blob 토큰이 없으면 업로드 자체를 받지 않는다.
+    if (process.env.VERCEL === '1' && !process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json(
+        {
+          error:
+            '배포 사이트에서는 이미지 업로드를 지원하지 않습니다. NAS 편집 화면에서 업로드한 뒤 배포해 주세요.',
+        },
+        { status: 503 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 

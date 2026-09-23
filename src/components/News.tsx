@@ -5,6 +5,7 @@ import Link from "next/link";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 interface NewsItem {
   id: string;
@@ -73,10 +74,8 @@ export default function News() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>(defaultNewsItems);
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content`);
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       
       // newsData 로드 (제목, 설명 등)
       if (data.newsData) {
@@ -129,6 +128,14 @@ export default function News() {
         setNewsItems(sortedNews.slice(0, 3));
       }
       setIsDataLoaded(true); // 데이터 로드 완료
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content`);
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to fetch news data", error);
       // API 호출 실패 시 기본 데이터 사용

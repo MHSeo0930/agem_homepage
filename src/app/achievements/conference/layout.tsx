@@ -1,3 +1,5 @@
+import WithContent from "@/components/WithContent";
+
 export const metadata = {
   title: "Conference Presentations | Achievements",
   description: "Conference presentations and proceedings",
@@ -8,6 +10,6 @@ export default function ConferenceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <WithContent keys={["conferences", "conferencePage"]}>{children}</WithContent>;
 }
 

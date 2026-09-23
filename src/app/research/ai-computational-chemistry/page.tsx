@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import EditableContent from "@/components/EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function AIComputationalChemistryPage() {
   const { authenticated } = useAuth();
@@ -38,10 +39,8 @@ export default function AIComputationalChemistryPage() {
   });
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content`);
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       if (data.aiComputationalChemistry) {
         try {
           const parsed = JSON.parse(data.aiComputationalChemistry);
@@ -73,6 +72,14 @@ export default function AIComputationalChemistryPage() {
       } else {
         setIsDataLoaded(true); // 데이터가 없어도 로드 완료로 표시
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content`);
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load AI computational chemistry data", error);
       setIsDataLoaded(true); // 에러가 발생해도 로드 완료로 표시

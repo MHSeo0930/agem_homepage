@@ -1,3 +1,4 @@
+import WithContent from "@/components/WithContent";
 import Research from "@/components/Research";
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default function ResearchPage() {
           </div>
         </div>
       </section>
-      <Research />
+      <WithContent keys={["research"]}><Research /></WithContent>
     </div>
   );
 }

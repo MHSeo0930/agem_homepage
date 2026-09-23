@@ -1,3 +1,4 @@
+import WithContent from "@/components/WithContent";
 import Contact from "@/components/Contact";
 
 export const metadata = {
@@ -27,7 +28,7 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-      <Contact />
+      <WithContent keys={["contact"]}><Contact /></WithContent>
     </div>
   );
 }

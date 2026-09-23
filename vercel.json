@@ -3,12 +3,20 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["icn1"],
+  "regions": [
+    "icn1"
+  ],
   "redirects": [
     {
       "source": "/",
       "destination": "/agem_homepage/",
       "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/agem_homepage/api/uploads/:file",
+      "destination": "/agem_homepage/uploads/:file"
     }
   ]
 }

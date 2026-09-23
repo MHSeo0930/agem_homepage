@@ -5,16 +5,23 @@ import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import { postContent } from "@/lib/contentApi";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function Hero() {
   const { authenticated } = useAuth();
   const [labName, setLabName] = useState("<h1 class=\"text-4xl md:text-6xl font-bold text-gray-900 mb-4\">AI & Green Energy Material Lab.</h1><p class=\"text-2xl md:text-3xl text-gray-700 font-semibold mb-2\">인공지능 그린에너지 소재 연구실</p><p class=\"text-base md:text-lg text-gray-600\">Pukyong National University<span class=\"block text-sm text-gray-500 mt-1\">부경대학교 나노융합공학과</span></p>");
 
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
+      if (data.hero) setLabName(data.hero);
+  };
+  useApplyInitialContent(applyContent);
+
   const loadData = async () => {
     try {
       const res = await fetch(`${getApiBase()}/api/content`);
       const data = await res.json();
-      if (data.hero) setLabName(data.hero);
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load hero data", error);
     }

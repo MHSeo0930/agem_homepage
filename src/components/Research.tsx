@@ -5,6 +5,7 @@ import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import { postContent } from "@/lib/contentApi";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function Research() {
   const { authenticated } = useAuth();
@@ -41,10 +42,8 @@ export default function Research() {
     ],
   });
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content`);
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       if (data.research) {
         try {
           const parsed = JSON.parse(data.research);
@@ -53,6 +52,14 @@ export default function Research() {
           console.error("Failed to parse research data");
         }
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content`);
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load research data", error);
     }

@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { normalizeUploadUrl } from "@/lib/uploadUrl";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 interface EducationItem {
   degree: string;
@@ -163,12 +165,8 @@ export default function ProfessorPage() {
   const { authenticated } = useAuth();
   const [professorData, setProfessorData] = useState<ProfessorData>(defaultProfessorData);
 
-  const loadData = async () => {
-    try {
-      // 캐시 회피: 새로고침/저장 후에도 항상 최신 content.json 반영
-      const url = `${getApiBase()}/api/content?_=${Date.now()}`;
-      const res = await fetch(url, { cache: "no-store", credentials: "include" });
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       if (data.professor) {
         try {
           const parsed = JSON.parse(data.professor);
@@ -177,6 +175,16 @@ export default function ProfessorPage() {
           console.error("Failed to parse professor data");
         }
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      // 캐시 회피: 새로고침/저장 후에도 항상 최신 content.json 반영
+      const url = `${getApiBase()}/api/content?_=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load professor data", error);
     }
@@ -267,7 +275,7 @@ export default function ProfessorPage() {
               <div className="md:col-span-1">
                 <div className="aspect-square bg-gray-200 rounded-xl mb-4 overflow-hidden relative">
                   <EditableImage
-                    src={professorData.image || "/images/members/professor.jpg"}
+                    src={normalizeUploadUrl(professorData.image) || "/images/members/professor.jpg"}
                     alt={`${professorData.name} (${professorData.nameKo})`}
                     contentKey="professor-image"
                     onSave={handleImageSave}

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { recentPublications, publications } from "@/data/publications";
+import { recentPublications, type Publication } from "@/data/publications";
 import EditableContent from "./EditableContent";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import { getJournalDisplayName } from "@/lib/journalNames";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function Publications() {
   const { authenticated } = useAuth();
@@ -20,13 +21,11 @@ export default function Publications() {
   };
   
   const [publicationsData, setPublicationsData] = useState(initialPublicationsData);
-  const [allPublications, setAllPublications] = useState(publications);
+  const [allPublications, setAllPublications] = useState<Publication[]>([]); // 빌드 시 content.json 값으로 채워짐 (옛 하드코딩 목록 사용 안 함)
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content`);
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
 
       // 논문 목록: 저널 페이지와 동기화 (journalPublications 배열)
       if (data.journalPublications) {
@@ -70,6 +69,14 @@ export default function Publications() {
       } else {
         setIsDataLoaded(true);
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content`);
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load publications data", error);
       setIsDataLoaded(true);

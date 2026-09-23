@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
 import { JOURNAL_ABBR_TO_FULL } from "@/lib/journalNames";
 import EditableContent from "@/components/EditableContent";
-import { publications as initialPublications } from "@/data/publications";
+import type { Publication } from "@/data/publications";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 // 엑셀 편집 컴포넌트
 function ExcelEditor({ data, onDataChange, onSave }: { data: any[]; onDataChange: (data: any[]) => void; onSave: (data: any[]) => Promise<void> }) {
@@ -160,7 +161,7 @@ export default function JournalsPage() {
   const { authenticated } = useAuth();
   const [draggedPubNumber, setDraggedPubNumber] = useState<number | null>(null);
   const [dragOverPubNumber, setDragOverPubNumber] = useState<number | null>(null);
-  const [publications, setPublications] = useState(initialPublications);
+  const [publications, setPublications] = useState<Publication[]>([]); // 빌드 시 content.json 값으로 채워짐 (옛 하드코딩 목록 사용 안 함)
   const [pageData, setPageData] = useState({
     title: "Journal Publications",
     titleKo: "학술지 논문",
@@ -191,10 +192,8 @@ export default function JournalsPage() {
     return [...submitted, ...rest];
   }, [excelData]);
 
-  const loadData = async () => {
-    try {
-      const res = await fetch(`${getApiBase()}/api/content?_=${Date.now()}`, { cache: "no-store", credentials: "include" });
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any) => {
       const normalizeStatus = (status: string | undefined) =>
           status === "게재됨" ? "published" : status;
       const toPublicationArray = (parsed: unknown): { number: number; status?: string }[] => {
@@ -251,6 +250,14 @@ export default function JournalsPage() {
       } else {
         setIsDataLoaded(true); // 데이터가 없어도 로드 완료로 표시
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/content?_=${Date.now()}`, { cache: "no-store", credentials: "include" });
+      const data = await res.json();
+      applyContent(data);
     } catch (error) {
       console.error("Failed to load journal publications data", error);
       setIsDataLoaded(true); // 에러가 발생해도 로드 완료로 표시

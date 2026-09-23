@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { normalizeUploadUrl } from "@/lib/uploadUrl";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
 import Image from "next/image";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function GalleryPage() {
   const { authenticated } = useAuth();
@@ -172,25 +174,17 @@ export default function GalleryPage() {
     },
   ]);
 
-  const loadData = async (refetchAfterSave = false) => {
-    try {
-      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
-      const res = await fetch(url, { cache: "no-store", credentials: "include" });
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any, refetchAfterSave = false) => {
       if (data.gallery) {
         try {
           const parsed = JSON.parse(data.gallery);
           // 업로드 경로가 /uploads/ 만 있으면 basePath 붙여서 NAS·Vercel에서 로드되도록
-          const basePath = getApiBase();
           const loadTime = Date.now();
           const normalized = parsed.map((item: { image?: string; [k: string]: unknown }) => {
-            let img = item.image?.startsWith("/uploads/") && !item.image.startsWith("/agem_homepage")
-              ? `${basePath}/uploads/${item.image.replace(/^\/uploads\//, "")}`
-              : item.image;
-            if (img && typeof img === "string" && img.includes("/uploads/") && !img.includes("/api/uploads/")) {
-              img = img.replace(/\/uploads\//, "/api/uploads/");
-            }
-            if (img && typeof img === "string" && img.includes("/uploads/")) {
+            let img = normalizeUploadUrl(item.image);
+            // 캐시 무효화 쿼리는 저장 직후 재조회에만 (초기 렌더 불일치·매 방문 재다운로드 방지)
+            if (refetchAfterSave && img) {
               img = img.includes("?") ? `${img}&_=${loadTime}` : `${img}?_=${loadTime}`;
             }
             return { ...item, image: img };
@@ -200,6 +194,15 @@ export default function GalleryPage() {
           console.error("Failed to parse gallery data");
         }
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async (refetchAfterSave = false) => {
+    try {
+      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
+      const data = await res.json();
+      applyContent(data, refetchAfterSave);
     } catch (error) {
       console.error("Failed to load gallery data", error);
     }

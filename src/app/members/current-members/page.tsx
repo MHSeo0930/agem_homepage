@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiBase } from "@/lib/apiBase";
+import { normalizeUploadUrl } from "@/lib/uploadUrl";
 import EditableContent from "@/components/EditableContent";
 import EditableImage from "@/components/EditableImage";
+import { useApplyInitialContent } from "@/components/InitialContent";
 
 export default function CurrentMembersPage() {
   const { authenticated } = useAuth();
@@ -146,22 +148,13 @@ export default function CurrentMembersPage() {
     },
   ]);
 
-  const loadData = async (refetchAfterSave = false) => {
-    try {
-      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
-      const res = await fetch(url, { cache: "no-store", credentials: "include" });
-      const data = await res.json();
+  // /api/content 응답(또는 빌드 시 초기 콘텐츠)을 화면 state에 반영
+  const applyContent = (data: any, refetchAfterSave = false) => {
       if (data.members) {
         try {
           const parsed = JSON.parse(data.members);
-          const basePath = getApiBase();
           const normalized = parsed.map((m: { image?: string; [k: string]: unknown }) => {
-            let img = m.image?.startsWith("/uploads/") && !m.image.startsWith("/agem_homepage")
-              ? `${basePath}/uploads/${m.image.replace(/^\/uploads\//, "")}`
-              : m.image;
-            if (img && typeof img === "string" && img.includes("/uploads/") && !img.includes("/api/uploads/")) {
-              img = img.replace(/\/uploads\//, "/api/uploads/");
-            }
+            let img = normalizeUploadUrl(m.image);
             return { ...m, image: img };
           });
           setMembers(normalized);
@@ -169,6 +162,15 @@ export default function CurrentMembersPage() {
           console.error("Failed to parse members data");
         }
       }
+  };
+  useApplyInitialContent(applyContent);
+
+  const loadData = async (refetchAfterSave = false) => {
+    try {
+      const url = `${getApiBase()}/api/content${refetchAfterSave ? `?_=${Date.now()}` : ""}`;
+      const res = await fetch(url, { cache: "no-store", credentials: "include" });
+      const data = await res.json();
+      applyContent(data, refetchAfterSave);
     } catch (error) {
       console.error("Failed to load members data", error);
     }
