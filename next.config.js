@@ -9,6 +9,8 @@ const staticUploads =
   (process.env.VERCEL === '1' || isGitHubActions ? '1' : '');
 const nextConfig = {
   reactStrictMode: true,
+  // 배포 스크립트는 NEXT_DIST_DIR=.next-deploy 로 검증 빌드 → 실행 중인 서버의 .next를 건드리지 않음
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   basePath,
   assetPrefix: '/agem_homepage/',
   ...(isGitHubActions ? { output: 'export' } : {}),

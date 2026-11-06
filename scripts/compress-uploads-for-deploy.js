@@ -94,11 +94,14 @@ async function main() {
   }
 
   console.log(`배포용 이미지 압축 중: ${files.length}개`);
-  for (const name of files) {
+  for (const [i, name] of files.entries()) {
     const filePath = path.join(UPLOADS_DIR, name);
     try {
       await compressImage(filePath);
-      process.stdout.write('.');
+      // 진행 표시: 웹 배포 창에서도 멈춘 것처럼 보이지 않도록 20개마다 줄 단위 출력
+      if ((i + 1) % 20 === 0 || i + 1 === files.length) {
+        console.log(`  사진 압축 ${i + 1}/${files.length}`);
+      }
     } catch (err) {
       stats.failed++;
       console.warn(`\n경고: ${name} 압축 실패`, err.message);
@@ -106,7 +109,7 @@ async function main() {
     }
   }
   console.log(
-    ` 완료. 압축 ${stats.compressed}개(${(stats.savedBytes / 1048576).toFixed(1)}MB 절감), ` +
+    `완료. 압축 ${stats.compressed}개(${(stats.savedBytes / 1048576).toFixed(1)}MB 절감), ` +
       `원본 유지 ${stats.kept}개, 건너뜀 ${stats.skipped}개, 실패 ${stats.failed}개`
   );
 }

@@ -7,11 +7,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { getApiBase } from "@/lib/apiBase";
 
-const DEPLOY_DONE_MARKERS = [
-  "배포 요청 완료",
-  "푸시 완료",
-  "변경된 파일이 없습니다",
-];
+type DeployStatus = "starting" | "running" | "success" | "failed" | "idle";
+
+interface DeployInfo {
+  runId: string;
+  status: DeployStatus;
+  step: string;
+  message: string;
+}
+
+const INITIAL_DEPLOY_INFO: DeployInfo = { runId: "", status: "starting", step: "", message: "" };
+/** 연속 폴링 실패가 이 횟수 이상이면 경고 표시 */
+const POLL_ERROR_WARN = 3;
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,7 +26,12 @@ export default function Header() {
   const [deploying, setDeploying] = useState(false);
   const [deployLogOpen, setDeployLogOpen] = useState(false);
   const [deployLog, setDeployLog] = useState("");
+  const [deployInfo, setDeployInfo] = useState<DeployInfo>(INITIAL_DEPLOY_INFO);
+  const [pollWarning, setPollWarning] = useState("");
+  const [hasNewLog, setHasNewLog] = useState(false);
   const deployPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollErrorsRef = useRef(0);
+  const followLogRef = useRef(true); // 사용자가 위쪽 로그를 읽는 중이면 false → 자동 스크롤 중단
   const logEndRef = useRef<HTMLPreElement>(null);
   const [mounted, setMounted] = useState(false);
   const { authenticated, loading, checkAuth } = useAuth();
@@ -29,37 +41,70 @@ export default function Header() {
     setMounted(true);
   }, []);
 
+  const stopDeployPoll = () => {
+    if (deployPollRef.current) {
+      clearInterval(deployPollRef.current);
+      deployPollRef.current = null;
+    }
+  };
+
+  // 배포 실행(runId)이 정해진 뒤에만 폴링 — 이전 실행의 완료 표시를 새 실행으로 오인하지 않음
   useEffect(() => {
-    if (!deployLogOpen) return;
+    if (!deployLogOpen || !deployInfo.runId) return;
+    const runId = deployInfo.runId;
     const tick = async () => {
       try {
         const res = await fetch(`${getApiBase()}/api/deploy/log`, {
           credentials: "include",
+          cache: "no-store",
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (data.log != null) setDeployLog(data.log);
-        const log = (data.log || "") as string;
-        if (DEPLOY_DONE_MARKERS.some((m) => log.includes(m))) {
-          if (deployPollRef.current) {
-            clearInterval(deployPollRef.current);
-            deployPollRef.current = null;
-          }
+        pollErrorsRef.current = 0;
+        setPollWarning("");
+        if (data.runId !== runId) return; // 아직 새 실행 로그가 기록되기 전
+        setDeployLog(data.log ?? "");
+        setDeployInfo({ runId, status: data.status, step: data.step ?? "", message: data.message ?? "" });
+        if (data.status === "success" || data.status === "failed") {
+          stopDeployPoll();
           setDeploying(false);
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        pollErrorsRef.current += 1;
+        if (pollErrorsRef.current >= POLL_ERROR_WARN) {
+          setPollWarning(
+            `서버 응답이 없습니다 (${pollErrorsRef.current}회 연속). 배포는 계속 진행 중일 수 있으니 잠시 후 확인하세요.`
+          );
+        }
       }
     };
     tick();
     deployPollRef.current = setInterval(tick, 1500);
-    return () => {
-      if (deployPollRef.current) clearInterval(deployPollRef.current);
-    };
-  }, [deployLogOpen]);
+    return stopDeployPoll;
+  }, [deployLogOpen, deployInfo.runId]);
 
   useEffect(() => {
-    logEndRef.current?.scrollTo(0, logEndRef.current.scrollHeight);
+    const el = logEndRef.current;
+    if (!el) return;
+    if (followLogRef.current) {
+      el.scrollTo(0, el.scrollHeight);
+    } else {
+      setHasNewLog(true);
+    }
   }, [deployLog]);
+
+  const handleLogScroll = () => {
+    const el = logEndRef.current;
+    if (!el) return;
+    followLogRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+    if (followLogRef.current) setHasNewLog(false);
+  };
+
+  const jumpToLatestLog = () => {
+    followLogRef.current = true;
+    setHasNewLog(false);
+    logEndRef.current?.scrollTo(0, logEndRef.current.scrollHeight);
+  };
 
   const handleLogout = async () => {
     try {
@@ -77,6 +122,11 @@ export default function Header() {
     if (deploying) return;
     setDeploying(true);
     setDeployLog("");
+    setDeployInfo(INITIAL_DEPLOY_INFO);
+    setPollWarning("");
+    setHasNewLog(false);
+    pollErrorsRef.current = 0;
+    followLogRef.current = true;
     setDeployLogOpen(true);
     // 모달이 먼저 그려지도록 한 틱 대기 후 API 호출
     await new Promise((r) => setTimeout(r, 50));
@@ -86,7 +136,13 @@ export default function Header() {
         credentials: "include",
       });
       const data = await res.json();
+      if (res.status === 409 && data.runId) {
+        // 다른 탭·브라우저에서 이미 진행 중인 배포에 연결
+        setDeployInfo({ ...INITIAL_DEPLOY_INFO, runId: data.runId, status: "running" });
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "배포 시작 실패");
+      setDeployInfo({ ...INITIAL_DEPLOY_INFO, runId: data.runId, status: "running" });
     } catch (error) {
       alert(error instanceof Error ? error.message : "배포 시작에 실패했습니다.");
       setDeploying(false);
@@ -95,13 +151,28 @@ export default function Header() {
   };
 
   const closeDeployLog = () => {
-    if (deployPollRef.current) {
-      clearInterval(deployPollRef.current);
-      deployPollRef.current = null;
-    }
+    stopDeployPoll();
     setDeployLogOpen(false);
     setDeploying(false);
   };
+
+  // 배포 창 상단 상태 표시 (진행 단계 / 성공 / 실패)
+  const deployBanner = (() => {
+    const strip = (m: string) => m.replace(/^\[DEPLOY_(DONE|FAILED)\] run=\S+\s*/, "");
+    switch (deployInfo.status) {
+      case "success":
+        return { cls: "bg-green-50 text-green-800 border-green-200", text: `✅ ${strip(deployInfo.message)}` };
+      case "failed": {
+        const m = deployInfo.message.match(/step=(.+?) exit=(\d+)/);
+        const text = m ? `❌ 배포 실패 — 단계: ${m[1]} (종료 코드 ${m[2]}). 아래 로그를 확인하세요.` : `❌ ${strip(deployInfo.message)}`;
+        return { cls: "bg-red-50 text-red-800 border-red-200", text };
+      }
+      case "running":
+        return { cls: "bg-blue-50 text-blue-800 border-blue-200", text: `⏳ 진행 중 ${deployInfo.step ? `— ${deployInfo.step}` : ""}` };
+      default:
+        return { cls: "bg-gray-50 text-gray-700 border-gray-200", text: "⏳ 배포를 시작하는 중…" };
+    }
+  })();
 
   return (
     <>
@@ -489,12 +560,30 @@ export default function Header() {
                 </svg>
               </button>
             </div>
-            <pre
-              ref={logEndRef}
-              className="flex-1 overflow-auto p-4 text-sm text-gray-800 whitespace-pre-wrap font-mono bg-gray-50 rounded-b-lg min-h-[200px]"
-            >
-              {deployLog || "배포를 시작했습니다. 로그를 불러오는 중…"}
-            </pre>
+            <div className={`px-4 py-2 text-sm border-b ${deployBanner.cls}`}>{deployBanner.text}</div>
+            {pollWarning && (
+              <div className="px-4 py-2 text-sm border-b bg-yellow-50 text-yellow-800 border-yellow-200">⚠️ {pollWarning}</div>
+            )}
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              {/* min-h-0: flex 자식이 로그 길이만큼 늘어나 화면 밖으로 넘치지 않고 스크롤되도록 */}
+              <pre
+                ref={logEndRef}
+                onScroll={handleLogScroll}
+                className="flex-1 min-h-0 overflow-auto p-4 text-sm text-gray-800 whitespace-pre-wrap break-all font-mono bg-gray-50 rounded-b-lg"
+                style={{ minHeight: 200 }}
+              >
+                {deployLog || "배포를 시작했습니다. 로그를 불러오는 중…"}
+              </pre>
+              {hasNewLog && (
+                <button
+                  type="button"
+                  onClick={jumpToLatestLog}
+                  className="absolute bottom-3 right-4 rounded-full bg-blue-600 px-3 py-1 text-xs text-white shadow hover:bg-blue-700"
+                >
+                  새 로그 ↓
+                </button>
+              )}
+            </div>
           </div>
         </div>,
         document.body
