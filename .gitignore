@@ -61,3 +61,4 @@ backup/
 /.next-deploy/
 .deploy.lock/
 .deploy.run
+.server.log
